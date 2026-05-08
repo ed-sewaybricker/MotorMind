@@ -1,0 +1,52 @@
+{% extends '../master.html' %}
+
+{% block title %}
+    Motores - Adicionar Motor
+{% endblock %}
+
+{% block content %}
+    {% load static %}
+    <p><a href="/motores">Voltar</a></p>
+    <h1>Adicionar Novo Motor</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="modelo">Modelo:</label>
+        <input type="text" id="modelo" name="modelo"><br><br>
+        <label for="potencia">Potência:</label>
+        <input type="text" id="potencia" name="potencia"><br><br>
+        <label for="tensao">Tensão:</label>
+        <input type="text" id="tensao" name="tensao"><br><br>
+        <label for="corrente">Corrente:</label>
+        <input type="text" id="corrente" name="corrente"><br><br>
+        <label for="rpm">RPM:</label>
+        <input type="text" id="rpm" name="rpm"><br><br>
+        <label for="modo_fixacao">Modo de fixação:</label>
+        <input type="text" id="modo_fixacao" name="modo_fixacao"><br><br>
+        
+        <label for="fabricante">Fabricante:</label>
+        <select name="fabricante">
+            <option value="">Selecione um fabricante</option>
+            {% for f in fabricantes %}
+                <option value="{{ f.id_fabricante }}">{{ f.nome }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="tipo">Tipo:</label>
+        <select name="tipo">
+            <option value="">Selecione um tipo</option>
+            {% for t in tipos %}
+                <option value="{{ t.id_tipo }}">{{ t.descricao }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="local">Local:</label>
+        <select name="local">
+            <option value="">Selecione um local</option>
+            {% for l in locais %}
+                <option value="{{ l.id_local }}">{{ l.nome }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <input type="submit" value="Enviar">
+    </form>
+{% endblock %}

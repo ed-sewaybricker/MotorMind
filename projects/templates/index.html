@@ -1,0 +1,22 @@
+{% extends "master.html" %}
+
+{% block title %}
+    MotorMind
+{% endblock %}
+
+{% block content %}
+    <h1>MotorMind</h1>
+
+    <h3>Fabricantes</h3>
+    <p>Veja todos os <a href="{% url 'fabricantes' %}">fabricantes</a></p>
+    <h3>Tipos de motores</h3>
+    <p>Veja todos os <a href="{% url 'tipo_motor' %}">tipos de motores</a></p>
+    <h3>Locais</h3>
+    <p>Veja todos os <a href="{% url 'locais' %}">locais</a></p>
+    <h3>Motores</h3>
+    <p>Veja todos os <a href="{% url 'motores' %}">motores</a></p>
+    <h3>Inspeções</h3>
+    <p>Veja todas os <a href="{% url 'inspecoes' %}">inspeções</a></p>
+    <h3>Manutenções</h3>
+    <p>Veja todas os <a href="{% url 'manutencoes' %}">manutenções</a></p>
+{% endblock %}

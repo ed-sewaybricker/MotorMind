@@ -1,0 +1,54 @@
+{% extends '../master.html' %}
+
+{% block title %}
+    MotorMind - Editar Manutenção
+{% endblock %}
+
+{% block content %}
+    <p><a href="{% url 'manutencoes' %}">Voltar</a></p>
+
+    <h1>
+        Editar Manutenção #{{ minhaManutencao.id_manutencao }}
+    </h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <label for="motor">Motor:</label>
+
+        <select name="motor" id="motor">
+            {% for m in motores %}
+                <option
+                    value="{{ m.id_motor }}"
+                    {% if m.id_motor == minhaManutencao.id_motor_id %}
+                        selected
+                    {% endif %}
+                >
+                    {{ m.modelo }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <br><br>
+
+        <label for="tipo">Tipo:</label>
+        <input type="text" id="tipo" name="tipo" value="{{ minhaManutencao.tipo }}">
+
+        <br><br>
+
+        <label for="data_manutencao">Data da manutenção:</label>
+        <input type="date" id="data_manutencao" name="data_manutencao" value="{{ minhaManutencao.data_manutencao|date:'Y-m-d' }}">
+
+        <br><br>
+
+        <label for="descricao">Descrição:</label>
+
+        <br>
+
+        <textarea id="descricao" name="descricao" rows="5" cols="50">{{ minhaManutencao.descricao }}</textarea>
+
+        <br><br>
+
+        <input type="submit" value="Salvar">
+    </form>
+{% endblock %}

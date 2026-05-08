@@ -1,0 +1,35 @@
+{% extends "../master.html" %}
+
+{% block title %}
+    MotorMind - Lista de Tipos de Motores
+{% endblock %}
+
+{% block content %}
+    <p><a href="../">Voltar</a></p>
+
+    <h1>Tipos de Motores</h1>
+
+    <p><a href="{% url 'novo_tipo_motor' %}">Adicionar tipo</a></p>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Descrição</th>
+            <th>Ações</th>
+        </tr>
+        {% for x in meuTipoMotor %}
+            <tr>
+                <th>{{ x.id_tipo }}</th>
+                <th>{{ x.descricao }}</th>
+                <th>
+                    <a href="{% url 'editar_tipo_motor' x.id_tipo %}">Editar</a> 
+                    <a href="{% url 'deletar_tipo_motor' x.id_tipo %}">Deletar</a>
+                </th>
+            </tr>
+        {% empty %}
+            <tr>
+                <th>Sem tipos de motores registrados</th>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

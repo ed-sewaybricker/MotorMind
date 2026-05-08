@@ -1,0 +1,48 @@
+{% extends "../master.html" %}
+
+{% block title %}
+    MotorMind - Lista de motores
+{% endblock %}
+
+{% block content %}
+    <p><a href="/">Voltar</a></p>
+
+    <h1>Motores</h1>
+
+    <p><a href="{% url 'novo_motor' %}">Adicionar motor</a></p>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Modelo</th>
+            <th>Potência</th>
+            <th>Tensão</th>
+            <th>Corrente</th>
+            <th>RPM</th>
+            <th>Modo de fixação</th>
+            <th>Fabricante</th>
+            <th>Tipo</th>
+            <th>Local</th>
+            <th>Ações</th>
+        </tr>
+        {% for x in meusMotores %}
+            <tr>
+                <th>{{ x.id_motor }}</th>
+                <th>{{ x.modelo }}</th>
+                <th>{{ x.potencia }}</th>
+                <th>{{ x.tensao }}</th>
+                <th>{{ x.corrente }}</th>
+                <th>{{ x.rpm }}</th>
+                <th>{{ x.modo_fixacao }}</th>
+                <th>{{ x.id_fabricante.nome }}</th>
+                <th>{{ x.id_tipo.descricao }}</th>
+                <th>{{ x.id_local.nome }}</th>
+                <th><a href="{% url 'editar_motor' x.id_motor %}">Editar</a> <a href="{% url 'deletar_motor' x.id_motor %}">Deletar</a></th>
+            </tr>
+        {% empty %}
+            <tr>
+                <th>Sem motores registrados</th>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

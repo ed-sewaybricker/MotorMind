@@ -1,0 +1,17 @@
+{% extends '../master.html' %}
+
+{% block title %}
+    TipoMotor - Editar Tipo
+{% endblock %}
+
+{% block content %}
+    {% load static %}
+    <p><a href="{% url 'tipo_motor' %}">Voltar</a></p>
+    <h1>Editar Tipo</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="descricao">Descrição do tipo:</label>
+        <input type="text" id="descricao" name="descricao" value="{{ meuTipoMotor.descricao }}"><br>
+        <input type="submit" value="Enviar">
+    </form>
+{% endblock %}

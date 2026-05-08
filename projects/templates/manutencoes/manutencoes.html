@@ -1,0 +1,48 @@
+{% extends "../master.html" %}
+
+{% block title %}
+    MotorMind - Lista de Manutenções
+{% endblock %}
+
+{% block content %}
+    <p><a href="/">Voltar</a></p>
+
+    <h1>Manutenções</h1>
+
+    <p>
+        <a href="{% url 'nova_manutencao' %}">
+            Adicionar manutenção
+        </a>
+    </p>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Motor</th>
+            <th>Tipo</th>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Ações</th>
+        </tr>
+
+        {% for x in minhasManutencoes %}
+            <tr>
+                <th>{{ x.id_manutencao }}</th>
+                <th>{{ x.id_motor.modelo }}</th>
+                <th>{{ x.tipo }}</th>
+                <th>{{ x.data_manutencao|date:"d/m/Y" }}</th>
+                <th>{{ x.descricao }}</th>
+                <th>
+                    <a href="{% url 'editar_manutencao' x.id_manutencao %}">Editar</a>
+                    <a href="{% url 'deletar_manutencao' x.id_manutencao %}">Deletar</a>
+                </th>
+            </tr>
+        {% empty %}
+            <tr>
+                <th colspan="6">
+                    Sem manutenções registradas
+                </th>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
