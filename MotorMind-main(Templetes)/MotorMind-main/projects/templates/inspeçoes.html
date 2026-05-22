@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Inspeções — MotorMind</title>
+</head>
+
+<body class="bg-white text-dark">
+
+    <div class="d-flex vh-100">
+
+        <!-- SIDEBAR -->
+        <div class="bg-light p-3 border-end border-primary" style="width: 220px">
+            <h5 class="text-primary mb-4">MotorMind</h5>
+            <nav class="nav flex-column">
+                <a href="dashboard.html" class="nav-link text-dark">Dashboard</a>
+                <a href="inventario.html" class="nav-link text-dark">Inventário</a>
+                <a href="inspecoes.html" class="nav-link text-primary">Inspeções</a>
+            </nav>
+        </div>
+
+        <!-- CONTEÚDO -->
+        <div class="flex-grow-1 p-4 overflow-auto">
+
+            <h2 class="text-primary mb-3">Inspeções</h2>
+
+            <!-- BOTÃO QUE ABRE O MODAL -->
+            <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#modalInspecao">
+                + Nova Inspeção
+            </button>
+
+            <div class="row g-3">
+
+                <!-- PENDENTE -->
+                <div class="col-md-4">
+                    <h6 class="text-muted text-decoration-underline">PENDENTE</h6>
+
+                    <div class="card bg-white border-danger text-dark p-3 mb-2">
+                        <small class="text-primary">MTR-0042</small>
+                        <p class="mb-1">Inspeção de superaquecimento</p>
+                        <small class="text-muted">Linha A — S3</small>
+                    </div>
+
+                    <div class="card bg-white border-danger text-dark p-3 mb-2">
+                        <small class="text-primary">MTR-0089</small>
+                        <p class="mb-1">Verificação de falha de partida</p>
+                        <small class="text-muted">Linha D — S4</small>
+                    </div>
+
+                </div>
+
+                <!-- EM ANDAMENTO -->
+                <div class="col-md-4">
+                    <h6 class="text-muted text-decoration-underline">EM ANDAMENTO</h6>
+
+                    <div class="card bg-white border-warning text-dark p-3 mb-2">
+                        <small class="text-primary">MTR-0001</small>
+                        <p class="mb-1">Troca de rolamento</p>
+                        <small class="text-muted">Linha A — S1</small>
+                    </div>
+
+                    <div class="card bg-white border-warning text-dark p-3 mb-2">
+                        <small class="text-primary">MTR-0199</small>
+                        <p class="mb-1">Lubrificação geral</p>
+                        <small class="text-muted">Linha C — S1</small>
+                    </div>
+
+                </div>
+
+                <!-- CONCLUÍDO -->
+                <div class="col-md-4">
+                    <h6 class="text-muted text-decoration-underline">CONCLUÍDO</h6>
+
+                    <div class="card bg-white border-success text-dark p-3 mb-2">
+                        <small class="text-primary">MTR-0203</small>
+                        <p class="mb-1">Inspeção periódica semanal</p>
+                        <small class="text-muted">Linha C — S2</small>
+                    </div>
+
+                    <div class="card bg-white border-success text-dark p-3 mb-2">
+                        <small class="text-primary">MTR-0067</small>
+                        <p class="mb-1">Troca de rolamento concluída</p>
+                        <small class="text-muted">Linha A — S1</small>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal fade" id="modalInspecao" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary">Nova Inspeção</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <form action="/nova_inspecao" method="post">
+
+                        <div class="mb-3">
+                            <label class="form-label">Motor</label>
+                            <select name="motor" class="form-select">
+                                <option>MTR-0042</option>
+                                <option>MTR-0089</option>
+                                <option>MTR-0118</option>
+                                <option>MTR-0199</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select name="tipo" class="form-select">
+                                <option>PENDENTE </option>
+                                <option>EM ANDAMENTO</option>
+                                <option>CONCLUÍDO</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Data</label>
+                            <input type="date" name="data" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Responsável</label>
+                            <input type="text" name="responsavel" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea name="observacoes" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="text-end">
+                            <button class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- BOOTSTRAP JS obrigatório pro modal funcionar -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
