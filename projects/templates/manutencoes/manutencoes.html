@@ -9,11 +9,9 @@
 
     <h1>Manutenções</h1>
 
-    <p>
-        <a href="{% url 'nova_manutencao' %}">
-            Adicionar manutenção
-        </a>
-    </p>
+    {% if request.user.is_staff %}
+        <p><a href="{% url 'nova_manutencao' %}">Adicionar manutenção</a></p>
+    {% endif %}
 
     <table>
         <tr>
@@ -22,7 +20,9 @@
             <th>Tipo</th>
             <th>Data</th>
             <th>Descrição</th>
-            <th>Ações</th>
+            {% if request.user.is_staff %}
+                <th>Ações</th>
+            {% endif %}
         </tr>
 
         {% for x in minhasManutencoes %}
@@ -32,10 +32,12 @@
                 <th>{{ x.tipo }}</th>
                 <th>{{ x.data_manutencao|date:"d/m/Y" }}</th>
                 <th>{{ x.descricao }}</th>
-                <th>
-                    <a href="{% url 'editar_manutencao' x.id_manutencao %}">Editar</a>
-                    <a href="{% url 'deletar_manutencao' x.id_manutencao %}">Deletar</a>
-                </th>
+                {% if request.user.is_staff %}
+                    <th>
+                        <a href="{% url 'editar_manutencao' x.id_manutencao %}">Editar</a>
+                        <a href="{% url 'deletar_manutencao' x.id_manutencao %}">Deletar</a>
+                    </th>
+                {% endif %}
             </tr>
         {% empty %}
             <tr>

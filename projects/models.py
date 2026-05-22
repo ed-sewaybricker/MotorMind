@@ -1,4 +1,8 @@
+from __future__ import annotations
+from typing import Any
+
 from django.db import models
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 # Este arquivo define a estrutura do banco de dados (tabelas).
 # Cada classe aqui representa uma tabela no banco.
@@ -26,12 +30,46 @@ class Locais(models.Model):
     def __str__(self) -> str:
         return self.nome
 
-class Usuarios(models.Model):
-    id_usuario = models.AutoField(primary_key=True)
-    nome = models.CharField(max_length=100)
+class UsuarioManager(BaseUserManager['Usuarios']):
 
-    def __str__(self) -> str:
-        return self.nome
+    def create_user(self, matricula: str, nome: str, password: str|None = None, **extra_fields:Any) -> "Usuarios":
+
+        if not matricula:
+            raise ValueError('A matrícula é obrigatória')
+
+        if not nome:
+            raise ValueError('O nome é obrigatório')
+
+        user = self.model(matricula=matricula, nome=nome, **extra_fields)
+
+        user.set_password(password)
+        user.save(using=self._db)
+
+        return user
+
+
+    def create_superuser(self, matricula: str, nome: str, password: str|None = None, **extra_fields:Any) -> "Usuarios":
+
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        return self.create_user(matricula, nome, password, **extra_fields)
+    
+class Usuarios(AbstractUser):
+    id_usuario = models.AutoField(primary_key=True)
+    matricula = models.CharField(max_length=20, unique=True)
+    nome = models.CharField(max_length=100)
+    username = None
+
+    USERNAME_FIELD = 'matricula'
+
+    REQUIRED_FIELDS = ['nome']
+
+    objects = UsuarioManager()
+
+    def __str__(self):
+        return f'{self.nome} ({self.matricula})'
 
 class Motores(models.Model):
     id_motor = models.AutoField(primary_key=True)

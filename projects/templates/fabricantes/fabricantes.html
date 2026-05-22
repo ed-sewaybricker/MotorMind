@@ -9,19 +9,25 @@
 
     <h1>Fabricantes</h1>
 
-    <p><a href="{% url 'novo_fabricante' %}">Adicionar fabricante</a></p>
+    {% if request.user.is_staff %}
+        <p><a href="{% url 'novo_fabricante' %}">Adicionar fabricante</a></p>
+    {% endif %}
 
     <table>
         <tr>
             <th>ID</th>
             <th>Nome</th>
-            <th>Ações</th>
+            {% if request.user.is_staff %}
+                <th>Ações</th>
+            {% endif %}
         </tr>
         {% for x in meuFabricantes %}
             <tr>
                 <th>{{ x.id_fabricante }}</th>
                 <th>{{ x.nome }}</th>
-                <th><a href="{% url 'editar_fabricante' x.id_fabricante %}">Editar</a> <a href="{% url 'deletar_fabricante' x.id_fabricante %}">Deletar</a></th>
+                {% if request.user.is_staff %}
+                    <th><a href="{% url 'editar_fabricante' x.id_fabricante %}">Editar</a> <a href="{% url 'deletar_fabricante' x.id_fabricante %}">Deletar</a></th>
+                {% endif %}
             </tr>
         {% empty %}
             <tr>

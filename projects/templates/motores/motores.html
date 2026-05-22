@@ -9,7 +9,9 @@
 
     <h1>Motores</h1>
 
-    <p><a href="{% url 'novo_motor' %}">Adicionar motor</a></p>
+    {% if request.user.is_staff %}
+        <p><a href="{% url 'novo_motor' %}">Adicionar motor</a></p>
+    {% endif %}
 
     <table>
         <tr>
@@ -23,7 +25,9 @@
             <th>Fabricante</th>
             <th>Tipo</th>
             <th>Local</th>
-            <th>Ações</th>
+            {% if request.user.is_staff %}
+                <th>Ações</th>
+            {% endif %}
         </tr>
         {% for x in meusMotores %}
             <tr>
@@ -37,7 +41,12 @@
                 <th>{{ x.id_fabricante.nome }}</th>
                 <th>{{ x.id_tipo.descricao }}</th>
                 <th>{{ x.id_local.nome }}</th>
-                <th><a href="{% url 'editar_motor' x.id_motor %}">Editar</a> <a href="{% url 'deletar_motor' x.id_motor %}">Deletar</a></th>
+                {% if request.user.is_staff %}
+                    <th>
+                        <a href="{% url 'editar_motor' x.id_motor %}">Editar</a> 
+                        <a href="{% url 'deletar_motor' x.id_motor %}">Deletar</a>
+                    </th>
+                {% endif %}
             </tr>
         {% empty %}
             <tr>
