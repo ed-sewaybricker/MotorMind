@@ -161,4 +161,4 @@ projects/
 ```
 
 ## 👨‍💻 Autores
-Projeto desenvolvido por Eduardo Sewaybricker Zambreto Paixão, JONATHAN ALISSON DOS SANTOS, MATHEUS DOS REIS PINTO, BRUNO CAMARGO ROSA, Felipe Yuji Yamada, MARCELO DIOGO GONSALEZ, JHONATAN DAVID ARCANJO DA SILVA e MATHEUS AUGUSTO ALVES
+Projeto desenvolvido por Eduardo Sewaybricker Zambreto Paixão, Jonathan Alisson Dos Santos, Matheus Dos Reis Pinto, Bruno Camargo Rosa, Felipe Yuji Yamada, Marcelo Diogo Gonsalez, Jhonatan David Arcanjo Da Silva e Matheus Augusto Alves
