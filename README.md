@@ -1,6 +1,6 @@
 # MotorMind 🚗⚙️
 
-Sistema de gerenciamento de motores industriais desenvolvido com Django.
+Sistema de gerenciamento de motores desenvolvido com Django.
 
 O objetivo do sistema é permitir o controle de inventário de motores, inspeções técnicas e administração de usuários, garantindo organização, rastreabilidade e controle operacional.
 
