@@ -1,16 +1,18 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpRequest, HttpResponseForbidden
+from django.http import HttpRequest, HttpResponseForbidden, Http404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from .models import (
     Fabricantes,
     TiposMotor,
     Locais,
     Motores,
     Inspecoes,
-    Manutencoes
+    Usuarios
 )
 from datetime import datetime
+from .models import Usuarios
 
 
 def usuario_admin(request: HttpRequest):
@@ -41,19 +43,57 @@ def index(request: HttpRequest):
 
         if user is not None:
             login(request, user)
+
+            if user.senha_temporaria:
+                return redirect('alterar_senha_obrigatoria')
+            
             return redirect('dashboard')
 
-        return render(request, 'index.html', {
+        return render(request, 'login.html', {
             'erro': 'Matrícula ou senha inválidas'
         })
 
-    return render(request, 'index.html')
+    return render(request, 'login.html')
+
+@login_required
+def alterar_senha_obrigatoria(request: HttpRequest):
+    if request.method == 'POST':
+        nova_senha = request.POST.get('senha')
+
+        if nova_senha:
+            user = request.user
+            user.set_password(nova_senha)
+            user.senha_temporaria = False
+            user.save()
+
+            login(request, user)
+
+            return redirect('dashboard')
+
+    return render(request, 'alterar_senha.html')
 
 
 @login_required
 def dashboard(request: HttpRequest):
+
+    total_motores = Motores.objects.count()
+
+    motores_em_manutencao = Inspecoes.objects.filter(status='EM ANDAMENTO').count()
+
+    if request.user.is_staff:
+        inspecoes_pendentes = Inspecoes.objects.filter(status='PENDENTE').count()
+        ultimas_inspecoes = Inspecoes.objects.select_related('id_motor', 'id_usuario').order_by('-id_inspecao')[:10]
+
+    else:
+        inspecoes_pendentes = Inspecoes.objects.filter(status='PENDENTE', id_usuario=request.user).count()
+
+        ultimas_inspecoes = Inspecoes.objects.select_related('id_motor','id_usuario').filter(id_usuario=request.user).order_by('-id_inspecao')[:10]
+
     return render(request, 'dashboard.html', {
-        'usuario': request.user
+        'total_motores': total_motores,
+        'motores_em_manutencao': motores_em_manutencao,
+        'inspecoes_pendentes': inspecoes_pendentes,
+        'ultimas_inspecoes': ultimas_inspecoes
     })
 
 
@@ -64,6 +104,146 @@ def sair(request: HttpRequest):
         return redirect('index')
     return redirect('dashboard')
 
+@login_required
+def administrador(request: HttpRequest):
+
+    if not request.user.is_staff:
+        raise Http404()
+
+    fabricantes = Fabricantes.objects.all().order_by('nome')
+    tipos = TiposMotor.objects.all().order_by('descricao')
+    locais = Locais.objects.all().order_by('nome')
+    usuarios = Usuarios.objects.all()
+
+    print("USUARIOS:", Usuarios.objects.all())
+    print("COUNT USERS:", Usuarios.objects.count())
+
+    return render(request, 'administrador.html', {
+        'fabricantes': fabricantes,
+        'tipos': tipos,
+        'locais': locais,
+        'usuarios': usuarios
+    })
+
+'''
+    USUÁRIOS
+'''
+
+@login_required
+def usuarios(request: HttpRequest):
+    if not request.user.is_staff:
+        raise Http404()
+
+    usuarios = Usuarios.objects.all().order_by('nome')
+
+    return render(request, 'usuarios.html', {
+        'usuarios': usuarios
+    })
+
+@login_required
+def novo_usuario(request: HttpRequest):
+
+    if not request.user.is_staff:
+        raise Http404()
+
+    if request.method == 'POST':
+
+        matricula = (request.POST.get('matricula') or '').strip()
+        nome = (request.POST.get('nome') or '').strip()
+        senha = (request.POST.get('senha') or '').strip()
+
+        if not all([matricula, nome, senha]):
+            return redirect('administrador')
+
+        usuario = Usuarios.objects.create_user(
+            matricula=str(matricula),
+            password=str(senha),
+            nome=str(nome)
+        )
+
+        if request.POST.get('is_staff') == 'on':
+            usuario.is_staff = True
+            usuario.senha_temporaria = True
+            usuario.save()
+
+        usuario.senha_temporaria = True
+        usuario.save()
+
+        return redirect('administrador')
+
+    return redirect('administrador')
+
+@login_required
+def editar_usuario(request: HttpRequest, id_usuario: int):
+
+    if not request.user.is_staff:
+        raise Http404()
+
+    usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
+
+    if request.method == 'POST':
+        usuario.nome = request.POST.get('nome', '').strip()
+        usuario.matricula = request.POST.get('matricula', '').strip()
+
+        usuario.is_staff = True if request.POST.get('is_staff') == 'on' else False
+
+        usuario.save()
+        return redirect('administrador')
+
+    return render(request, 'usuarios/editar_usuario.html', {
+        'usuario': usuario
+    })
+
+@login_required
+def deletar_usuario(request: HttpRequest, id_usuario: int):
+
+    if not request.user.is_staff:
+        raise Http404()
+
+    usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
+
+    if request.method == 'POST':
+        usuario.delete()
+        return redirect('administrador')
+
+    return render(request, 'usuarios/confirmar_delete.html', {
+        'usuario': usuario
+    })
+
+@login_required
+def reset(request: HttpRequest, id_usuario: int):
+
+    if not request.user.is_staff:
+        raise Http404()
+
+    usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
+
+    if request.method == 'POST':
+        nova_senha = request.POST.get('senha', '').strip()
+
+        if nova_senha:
+            usuario.set_password(nova_senha)
+            usuario.senha_temporaria = True
+            usuario.save()
+
+        return redirect('administrador')
+
+    return render(request, 'usuarios/reset_senha.html', {
+        'usuario': usuario
+    })
+
+@login_required
+def promover(request: HttpRequest, id_usuario: int):
+
+    if not request.user.is_staff:
+        raise Http404()
+
+    usuario = get_object_or_404(Usuarios, id=id_usuario)
+
+    usuario.is_staff = not usuario.is_staff
+    usuario.save()
+
+    return redirect('administrador')
 
 '''
     FABRICANTES
@@ -71,6 +251,9 @@ def sair(request: HttpRequest):
 
 @login_required
 def fabricantes(request: HttpRequest):
+
+    if not request.user.is_staff:
+        raise Http404()
 
     # Aqui eu busco todos os fabricantes cadastrados no banco.
     meuFabricantes = Fabricantes.objects.all().order_by('nome')
@@ -84,14 +267,11 @@ def fabricantes(request: HttpRequest):
 @login_required
 def novo_fabricante(request: HttpRequest):
 
+    if not request.user.is_staff:
+        raise Http404()
+
     # Essa view serve tanto para mostrar o formulário (GET)
     # quanto para salvar um novo fabricante (POST).
-
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
     if request.method == 'POST':
 
         # Pego o valor digitado no formulário.
@@ -100,31 +280,29 @@ def novo_fabricante(request: HttpRequest):
         # Validação simples: se não tiver nome,
         # volta para a listagem.
         if not nome:
-            return redirect('fabricantes')
+            return redirect('administrador')
 
         # Crio um novo registro no banco.
         Fabricantes.objects.create(nome=nome)
 
         # Depois de salvar,
         # redireciono para a lista.
-        return redirect('fabricantes')
+        return redirect('administrador')
 
     # Se não for POST (ou seja, GET),
     # apenas mostro o formulário.
-    return render(request, 'fabricantes/novo_fabricante.html')
+    return redirect('administrador')
 
 
 @login_required
 def editar_fabricante(request: HttpRequest, id_fabricante: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
+    if not request.user.is_staff:
+        raise Http404()
 
     # Busca o fabricante
     # ou retorna 404 se não existir
-    meuFabricante = get_object_or_404(Fabricantes, id_fabricante=id_fabricante)
+    fabricante = get_object_or_404(Fabricantes, id_fabricante=id_fabricante)
 
     if request.method == 'POST':
         # Pego o novo valor enviado pelo formulário.
@@ -132,47 +310,41 @@ def editar_fabricante(request: HttpRequest, id_fabricante: int):
 
         # Validação simples.
         if not nome:
-            return redirect('fabricantes')
+            return redirect('administrador')
 
         # Atualizo o objeto com o novo valor.
-        meuFabricante.nome = nome
+        fabricante.nome = nome
 
         # Salvo a alteração no banco.
-        meuFabricante.save()
+        fabricante.save()
 
         # Redireciono para a listagem.
-        return redirect('fabricantes')
+        return redirect('administrador')
 
     # Se for GET, apenas exibo o formulário
     # com os dados atuais.
-    return render(request, 'fabricantes/editar_fabricante.html', {
-        'meuFabricante': meuFabricante
-    })
+    return redirect('administrador')
 
 
 @login_required
 def deletar_fabricante(request: HttpRequest, id_fabricante: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     # Busco o fabricante pelo ID.
-    meuFabricante = get_object_or_404(Fabricantes, id_fabricante=id_fabricante)
+    fabricante = get_object_or_404(Fabricantes, id_fabricante=id_fabricante)
 
     if request.method == 'POST':
 
         # Deleto o registro do banco.
-        meuFabricante.delete()
+        fabricante.delete()
 
         # Após deletar,
         # volto para a listagem.
-        return redirect('fabricantes')
+        return redirect('administrador')
 
-    return render(request, 'fabricantes/confirmar_delete.html', {
-        'meuFabricante': meuFabricante
-    })
+    return redirect('administrador')
 
 
 '''
@@ -182,7 +354,10 @@ def deletar_fabricante(request: HttpRequest, id_fabricante: int):
 @login_required
 def tipo_motor(request: HttpRequest):
 
-    meuTipoMotor = TiposMotor.objects.all().order_by('descricao')
+    if not request.user.is_staff:
+        raise Http404()
+
+    meuTipoMotor = TiposMotor.objects.all().order_by('id_tipo')
 
     return render(request, 'tipomotor/tipomotor.html', {
         'meuTipoMotor': meuTipoMotor
@@ -192,11 +367,9 @@ def tipo_motor(request: HttpRequest):
 @login_required
 def novo_tipo_motor(request: HttpRequest):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     if request.method == 'POST':
 
         descricao = request.POST.get('descricao', '').strip()
@@ -206,55 +379,47 @@ def novo_tipo_motor(request: HttpRequest):
 
         TiposMotor.objects.create(descricao=descricao)
 
-        return redirect('tipo_motor')
+        return redirect('administrador')
 
-    return render(request, 'tipomotor/novo_tipo_motor.html')
+    return redirect('administrador')
 
 
 @login_required
 def editar_tipo_motor(request: HttpRequest, id_tipo: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     meuTipoMotor = get_object_or_404(TiposMotor, id_tipo=id_tipo)
 
     if request.method == 'POST':
         descricao = request.POST.get('descricao', '').strip()
 
         if not descricao:
-            return redirect('tipo_motor')
+            return redirect('administrador')
 
         meuTipoMotor.descricao = descricao
 
         meuTipoMotor.save()
 
-        return redirect('tipo_motor')
+        return redirect('administrador')
 
-    return render(request, 'tipomotor/editar_tipo_motor.html', {
-        'meuTipoMotor': meuTipoMotor
-    })
+    return redirect('administrador')
 
 
 @login_required
 def deletar_tipo_motor(request: HttpRequest, id_tipo: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     tipoMotor = get_object_or_404(TiposMotor, id_tipo=id_tipo)
 
     if request.method == 'POST':
         tipoMotor.delete()
-        return redirect('tipo_motor')
+        return redirect('administrador')
 
-    return render(request, 'tipomotor/confirmar_delete.html', {
-        'tipoMotor': tipoMotor
-    })
+    return redirect('administrador')
 
 
 '''
@@ -263,6 +428,9 @@ def deletar_tipo_motor(request: HttpRequest, id_tipo: int):
 
 @login_required
 def locais(request: HttpRequest):
+
+    if not request.user.is_staff:
+        raise Http404()
 
     meusLocais = Locais.objects.all().order_by('nome')
 
@@ -274,11 +442,9 @@ def locais(request: HttpRequest):
 @login_required
 def novo_local(request: HttpRequest):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     if request.method == 'POST':
         nome = request.POST.get('nome', '').strip()
 
@@ -286,54 +452,46 @@ def novo_local(request: HttpRequest):
             return redirect('locais')
 
         Locais.objects.create(nome=nome)
-        return redirect('locais')
+        return redirect('administrador')
 
-    return render(request, 'locais/novo_local.html')
+    return redirect('administrador')
 
 
 @login_required
 def editar_local(request: HttpRequest, id_local: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     meuLocal = get_object_or_404(Locais, id_local=id_local)
 
     if request.method == 'POST':
         nome = request.POST.get('nome', '').strip()
 
         if not nome:
-            return redirect('locais')
+            return redirect('administrador')
 
         meuLocal.nome = nome
 
         meuLocal.save()
-        return redirect('locais')
+        return redirect('administrador')
 
-    return render(request, 'locais/editar_local.html', {
-        'meuLocal': meuLocal
-    })
+    return redirect('administrador')
 
 
 @login_required
 def deletar_local(request: HttpRequest, id_local: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     meuLocal = get_object_or_404(Locais, id_local=id_local)
 
     if request.method == 'POST':
         meuLocal.delete()
-        return redirect('locais')
+        return redirect('administrador')
 
-    return render(request, 'locais/confirmar_delete.html', {
-        'meuLocal': meuLocal
-    })
+    return redirect('administrador')
 
 
 '''
@@ -341,23 +499,27 @@ def deletar_local(request: HttpRequest, id_local: int):
 '''
 
 @login_required
-def motores(request: HttpRequest):
+def inventario(request: HttpRequest):
 
     meusMotores = Motores.objects.select_related('id_fabricante', 'id_tipo', 'id_local').all().order_by('modelo')
+    fabricantes = Fabricantes.objects.all().order_by('nome')
+    tipos = TiposMotor.objects.all().order_by('descricao')
+    locais = Locais.objects.all().order_by('nome')
 
-    return render(request, 'motores/motores.html', {
-        'meusMotores': meusMotores
+    return render(request, 'inventario.html', {
+        'meusMotores': meusMotores,
+        'fabricantes': fabricantes,
+        'tipos': tipos,
+        'locais': locais
     })
 
 
 @login_required
-def novo_motor(request: HttpRequest):
+def adicionar_motor(request: HttpRequest):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     # Antes de tudo, busco os dados das tabelas relacionadas.
     # Esses dados serão usados para preencher os selects (dropdowns) no formulário.
     fabricantes = Fabricantes.objects.all().order_by('nome')
@@ -371,6 +533,11 @@ def novo_motor(request: HttpRequest):
         corrente = request.POST.get('corrente', '').strip()
         rpm = request.POST.get('rpm', '').strip()
         modo_fixacao = request.POST.get('modo_fixacao', '').strip()
+        quantidade = request.POST.get('quantidade')
+
+        quantidade = int(quantidade) if quantidade else 0
+        if quantidade < 0:
+            quantidade = 0
 
         # Pego os IDs das chaves estrangeiras
         # (vindos dos selects).
@@ -379,7 +546,7 @@ def novo_motor(request: HttpRequest):
         local_id = request.POST.get('local')
 
         if not all([modelo, fabricante_id, tipo_id, local_id]):
-            return redirect('novo_motor')
+            return redirect('inventario')
 
         # Para chaves estrangeiras,
         # posso usar diretamente o "_id"
@@ -390,12 +557,13 @@ def novo_motor(request: HttpRequest):
             corrente=corrente,
             rpm=rpm,
             modo_fixacao=modo_fixacao,
+            quantidade=quantidade,
             id_fabricante_id=fabricante_id,
             id_tipo_id=tipo_id,
             id_local_id=local_id
         )
 
-        return redirect('motores')
+        return redirect('inventario')
 
     return render(request, 'motores/novo_motor.html', {
         'fabricantes': fabricantes,
@@ -407,16 +575,10 @@ def novo_motor(request: HttpRequest):
 @login_required
 def editar_motor(request: HttpRequest, id_motor: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     meuMotor = get_object_or_404(Motores, id_motor=id_motor)
-
-    fabricantes = Fabricantes.objects.all().order_by('nome')
-    tipos = TiposMotor.objects.all().order_by('descricao')
-    locais = Locais.objects.all().order_by('nome')
 
     if request.method == 'POST':
 
@@ -426,6 +588,12 @@ def editar_motor(request: HttpRequest, id_motor: int):
         corrente = request.POST.get('corrente', '').strip()
         rpm = request.POST.get('rpm', '').strip()
         modo_fixacao = request.POST.get('modo_fixacao', '').strip()
+        quantidade = request.POST.get('quantidade')
+
+        quantidade = int(quantidade) if quantidade else 0
+
+        if quantidade < 0:
+            quantidade = 0
 
         fabricante_id = request.POST.get('fabricante')
         tipo_id = request.POST.get('tipo')
@@ -440,40 +608,32 @@ def editar_motor(request: HttpRequest, id_motor: int):
         meuMotor.corrente = corrente
         meuMotor.rpm = rpm
         meuMotor.modo_fixacao = modo_fixacao
+        meuMotor.quantidade = quantidade
 
-        meuMotor.id_fabricante_id = fabricante_id
-        meuMotor.id_tipo_id = tipo_id
-        meuMotor.id_local_id = local_id
+        meuMotor.id_fabricante_id = fabricante_id # type: ignore
+        meuMotor.id_tipo_id = tipo_id # type: ignore
+        meuMotor.id_local_id = local_id # type: ignore
 
         meuMotor.save()
 
-        return redirect('motores')
+        return redirect('inventario')
 
-    return render(request, 'motores/editar_motor.html', {
-        'meuMotor': meuMotor,
-        'fabricantes': fabricantes,
-        'tipos': tipos,
-        'locais': locais
-    })
+    return redirect('inventario')
 
 
 @login_required
-def deletar_motor(request: HttpRequest, id_motor: int):
+def excluir_motor(request: HttpRequest, id_motor: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     motor = get_object_or_404(Motores, id_motor=id_motor)
 
     if request.method == 'POST':
         motor.delete()
-        return redirect('motores')
+        return redirect('inventario')
 
-    return render(request, 'motores/confirmar_delete.html', {
-        'motor': motor
-    })
+    return redirect('inventario')
 
 
 '''
@@ -483,53 +643,99 @@ def deletar_motor(request: HttpRequest, id_motor: int):
 @login_required
 def inspecoes(request: HttpRequest):
 
-    minhasInspecoes = Inspecoes.objects.select_related('id_motor').all().order_by('-data_inspecao')
+    if request.user.is_staff:
+        inspecoes = Inspecoes.objects.select_related('id_motor', 'id_usuario').all()
+    else:
+        inspecoes = Inspecoes.objects.select_related('id_motor', 'id_usuario').filter(id_usuario=request.user)
 
-    return render(request, 'inspecoes/inspecoes.html', {
-        'minhasInspecoes': minhasInspecoes
+    pendentes = inspecoes.filter(status='PENDENTE')
+    em_andamento = inspecoes.filter(status='EM ANDAMENTO')
+    concluidas = inspecoes.filter(status='CONCLUÍDO')
+
+    usuarios = Usuarios.objects.all().order_by('nome')
+
+    motores_em_inspecao = Inspecoes.objects.filter(status__in=['PENDENTE', 'EM ANDAMENTO']).values_list('id_motor_id', flat=True)
+
+    motores = Motores.objects.exclude(id_motor__in=motores_em_inspecao).order_by('modelo')
+
+    return render(request, 'inspecoes.html', {
+        'usuarios': usuarios,
+        'motores': motores,
+        'pendentes': pendentes,
+        'em_andamento': em_andamento,
+        'concluidas': concluidas
     })
 
 
 @login_required
 def nova_inspecao(request: HttpRequest):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
-    motores = Motores.objects.all().order_by('modelo')
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     if request.method == 'POST':
         motor_id = request.POST.get('motor')
+        responsavel_id = request.POST.get('responsavel')
         data_inspecao = request.POST.get('data_inspecao')
         observacoes = request.POST.get('observacoes', '').strip()
 
-        if not all([motor_id, data_inspecao, observacoes]):
-            return redirect('nova_inspecao')
+        inspecao_aberta = Inspecoes.objects.filter(id_motor_id=motor_id,status__in=['PENDENTE', 'EM ANDAMENTO']).exists()
+
+        if inspecao_aberta:
+            return redirect('inspecoes')
+
+        if not all([motor_id, responsavel_id, data_inspecao]):
+            return redirect('inspecoes')
 
         Inspecoes.objects.create(
             id_motor_id=motor_id,
-            id_usuario=request.user,
+            id_usuario_id=responsavel_id,
             data_inspecao=data_inspecao,
-            observacoes=observacoes
+            observacoes=observacoes,
+            status='PENDENTE'
         )
 
         return redirect('inspecoes')
 
-    return render(request, 'inspecoes/nova_inspecao.html', {
-        'motores': motores
-    })
+    return redirect('inspecoes')
+
+@login_required
+def iniciar_inspecao(request: HttpRequest, id_inspecao: int):
+
+    inspecao = get_object_or_404(Inspecoes, id_inspecao=id_inspecao)
+
+    if not request.user.is_staff and inspecao.id_usuario != request.user:
+        return HttpResponseForbidden('Sem permissão.')
+
+    if inspecao.status == 'PENDENTE':
+        inspecao.status = 'EM ANDAMENTO'
+        inspecao.data_inicio = timezone.now()
+        inspecao.save()
+
+    return redirect('inspecoes')
+
+@login_required
+def concluir_inspecao(request: HttpRequest, id_inspecao: int):
+
+    inspecao = get_object_or_404(Inspecoes, id_inspecao=id_inspecao)
+
+    if not request.user.is_staff and inspecao.id_usuario != request.user:
+        return HttpResponseForbidden('Sem permissão.')
+
+    if inspecao.status == 'EM ANDAMENTO':
+        inspecao.status = 'CONCLUÍDO'
+        inspecao.data_conclusao = timezone.now()
+        inspecao.save()
+
+    return redirect('inspecoes')
 
 
 @login_required
 def editar_inspecao(request: HttpRequest, id_inspecao: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     minhaInspecao = get_object_or_404(Inspecoes, id_inspecao=id_inspecao)
 
     motores = Motores.objects.all().order_by('modelo')
@@ -548,7 +754,7 @@ def editar_inspecao(request: HttpRequest, id_inspecao: int):
         data_inspecao = datetime.strptime(data_inspecao_str, '%Y-%m-%d').date()
 
         if motor_id:
-            minhaInspecao.id_motor_id = motor_id
+            minhaInspecao.id_motor = Motores.objects.get(pk=motor_id)
 
         minhaInspecao.data_inspecao = data_inspecao
         minhaInspecao.observacoes = observacoes
@@ -565,11 +771,9 @@ def editar_inspecao(request: HttpRequest, id_inspecao: int):
 @login_required
 def deletar_inspecao(request: HttpRequest, id_inspecao: int):
 
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
+    if not request.user.is_staff:
+        raise Http404()
+    
     minhaInspecao = get_object_or_404(Inspecoes, id_inspecao=id_inspecao)
 
     if request.method == 'POST':
@@ -578,113 +782,4 @@ def deletar_inspecao(request: HttpRequest, id_inspecao: int):
 
     return render(request, 'inspecoes/confirmar_delete.html', {
         'minhaInspecao': minhaInspecao
-    })
-
-
-'''
-    MANUTENÇÕES
-'''
-
-@login_required
-def manutencoes(request: HttpRequest):
-
-    minhasManutencoes = Manutencoes.objects.select_related('id_motor').all().order_by('-data_manutencao')
-
-    return render(request, 'manutencoes/manutencoes.html', {
-        'minhasManutencoes': minhasManutencoes
-    })
-
-
-@login_required
-def nova_manutencao(request: HttpRequest):
-
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
-    motores = Motores.objects.all().order_by('modelo')
-
-    if request.method == 'POST':
-        motor_id = request.POST.get('motor')
-        tipo = request.POST.get('tipo', '').strip()
-        data_manutencao = request.POST.get('data_manutencao')
-        descricao = request.POST.get('descricao', '').strip()
-
-        if not all([motor_id, tipo, data_manutencao, descricao]):
-            return redirect('nova_manutencao')
-
-        Manutencoes.objects.create(
-            id_motor_id=motor_id,
-            id_usuario=request.user,
-            tipo=tipo,
-            data_manutencao=data_manutencao,
-            descricao=descricao
-        )
-
-        return redirect('manutencoes')
-
-    return render(request, 'manutencoes/nova_manutencao.html', {
-        'motores': motores
-    })
-
-
-@login_required
-def editar_manutencao(request: HttpRequest, id_manutencao: int):
-
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
-    minhaManutencao = get_object_or_404(Manutencoes, id_manutencao=id_manutencao)
-
-    motores = Motores.objects.all().order_by('modelo')
-
-    if request.method == 'POST':
-        motor_id = request.POST.get('motor')
-        tipo = request.POST.get('tipo', '').strip()
-        data_manutencao_str = request.POST.get('data_manutencao')
-        descricao = request.POST.get('descricao', '').strip()
-
-        if not descricao:
-            return redirect('editar_manutencao', id_manutencao=id_manutencao)
-
-        if not data_manutencao_str:
-            return redirect('editar_manutencao', id_manutencao=id_manutencao)
-
-        data_manutencao = datetime.strptime(data_manutencao_str, '%Y-%m-%d').date()
-
-        if motor_id:
-            minhaManutencao.id_motor = motor_id
-
-        minhaManutencao.tipo = tipo
-        minhaManutencao.data_manutencao = data_manutencao
-        minhaManutencao.descricao = descricao
-
-        minhaManutencao.save()
-        return redirect('manutencoes')
-
-    return render(request, 'manutencoes/editar_manutencao.html', {
-        'minhaManutencao': minhaManutencao,
-        'motores': motores
-    })
-
-
-@login_required
-def deletar_manutencao(request: HttpRequest, id_manutencao: int):
-
-    permissao = usuario_admin(request)
-
-    if permissao:
-        return permissao
-
-    minhaManutencao = get_object_or_404(Manutencoes, id_manutencao=id_manutencao)
-
-    if request.method == 'POST':
-        minhaManutencao.delete()
-        return redirect('manutencoes')
-
-    return render(request, 'manutencoes/confirmar_delete.html', {
-        'minhaManutencao': minhaManutencao
     })

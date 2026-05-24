@@ -1,33 +1,114 @@
 {% extends "master.html" %}
 
 {% block title %}
-    MotorMind
+    Dashboard - MotorMind
+{% endblock %}
+
+{% block body_class %}
+    bg-white text-dark
 {% endblock %}
 
 {% block content %}
-    <h1>Usuário logado</h1>
 
-    <p>
-        Bem-vindo {{ request.user.nome }}
-    </p>
+    <div class="d-flex vh-100">
 
-    <h3>Fabricantes</h3>
-        <p>Veja todos os <a href="{% url 'fabricantes' %}">fabricantes</a></p>
-        <h3>Tipos de motores</h3>
-        <p>Veja todos os <a href="{% url 'tipo_motor' %}">tipos de motores</a></p>
-        <h3>Locais</h3>
-        <p>Veja todos os <a href="{% url 'locais' %}">locais</a></p>
-        <h3>Motores</h3>
-        <p>Veja todos os <a href="{% url 'motores' %}">motores</a></p>
-        <h3>Inspeções</h3>
-        <p>Veja todas os <a href="{% url 'inspecoes' %}">inspeções</a></p>
-        <h3>Manutenções</h3>
-        <p>Veja todas os <a href="{% url 'manutencoes' %}">manutenções</a></p>
+        <!-- SIDEBAR -->
+        <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 220px; height: 100vh;">
+            <div>
+                <h5 class="text-primary mb-4">MotorMind</h5>
 
-    <form action="{% url 'sair' %}" method="POST">
-        {% csrf_token %}
-        <button type="submit">
-            Sair
-        </button>
-    </form>
+                <nav class="nav flex-column">
+                    <a href="{% url 'dashboard' %}" class="nav-link text-primary">Dashboard</a>
+                    <a href="{% url 'inventario' %}" class="nav-link text-dark">Inventário</a>
+                    <a href="{% url 'inspecoes' %}" class="nav-link text-dark">Inspeções</a>
+                    {% if request.user.is_staff %}
+                        <a href="{% url 'administrador' %}" class="nav-link text-primary">Painel de Admin</a>
+                    {% endif %}
+                </nav>
+            </div>
+
+            <div class="mt-auto">
+                <form action="{% url 'sair' %}" method="POST">
+                    {% csrf_token %}
+                    <p>Bem-vindo {{ request.user.nome }}</p>
+                    <button type="submit" class="btn btn-outline-danger w-100">Sair</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO -->
+        <div class="p-4 w-100">
+
+            <h2 class="text-primary mb-4">Dashboard</h2>
+
+            <!-- 4 CARDS DE RESUMO -->
+            <div class="row g-3 mb-4">
+
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <small class="text-muted">Total de Motores</small>
+                        <h3 class="text-primary">{{ total_motores }}</h3>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <small class="text-muted">Em Manutenção</small>
+                        <h3 class="text-warning">{{ motores_em_manutencao }}</h3>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <small class="text-muted">Inspeções Pendentes</small>
+                        <h3 class="text-danger">{{ inspecoes_pendentes }}</h3>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TABELA DE OCORRÊNCIAS -->
+            <h6 class="text-muted mb-2">Últimas Inspeções</h6>
+
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Motor</th>
+                        <th>Observação</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in ultimas_inspecoes %}
+                        <tr>
+
+                            <td>{{ i.id_motor.modelo }}</td>
+                            <td>{{ i.observacoes|truncatechars:40 }}</td>
+                            <td>
+                                {% if i.status == 'PENDENTE' %}
+                                    <span class="badge bg-danger">Pendente</span>
+
+                                {% elif i.status == 'EM ANDAMENTO' %}
+                                    <span class="badge bg-warning text-dark">Em andamento</span>
+
+                                {% elif i.status == 'CONCLUÍDO' %}
+                                    <span class="badge bg-success">Concluído</span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>{{ i.data_inspecao|date:"d/m/Y" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">Nenhuma inspeção encontrada.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
 {% endblock %}

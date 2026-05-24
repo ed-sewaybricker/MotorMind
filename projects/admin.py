@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Fabricantes, TiposMotor, Locais, Usuarios, Motores, Inspecoes, Manutencoes
+from .models import Fabricantes, TiposMotor, Locais, Usuarios, Motores, Inspecoes
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import Usuarios
@@ -7,32 +7,25 @@ from .models import Usuarios
 @admin.register(Usuarios)
 class UsuariosAdmin(UserAdmin):
 
+    model = Usuarios
+
     ordering = ('matricula',)
 
-    list_display = (
-        'matricula',
-        'is_staff',
-        'is_superuser',
-        'is_active'
-    )
+    list_display = ('matricula', 'nome', 'is_staff', 'is_superuser', 'is_active')
 
-    search_fields = ('matricula',)
+    search_fields = ('matricula', 'nome')
 
     fieldsets = (
         (None, {
-            'fields': (
-                'matricula',
-                'password'
-            )
+            'fields': ('matricula', 'password')
+        }),
+
+        ('Informações pessoais', {
+            'fields': ('nome',)
         }),
 
         ('Permissões', {
-            'fields': (
-                'is_active',
-                'is_staff',
-                'is_superuser',
-                'groups',
-                'user_permissions'
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'
             )
         }),
     )
@@ -40,12 +33,7 @@ class UsuariosAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': (
-                'matricula',
-                'password1',
-                'password2',
-                'is_staff',
-                'is_superuser'
+            'fields': ('matricula', 'nome', 'password1', 'password2', 'is_staff', 'is_superuser', 'is_active'
             ),
         }),
     )
@@ -62,4 +50,3 @@ admin.site.register(TiposMotor)
 admin.site.register(Locais)
 admin.site.register(Motores)
 admin.site.register(Inspecoes)
-admin.site.register(Manutencoes)
