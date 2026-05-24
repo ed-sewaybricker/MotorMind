@@ -1,8 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpRequest, HttpResponseForbidden, Http404
+from django.http import HttpRequest, HttpResponseForbidden, Http404, JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
+from datetime import datetime
+from .models import Usuarios
+
 from .models import (
     Fabricantes,
     TiposMotor,
@@ -11,17 +16,20 @@ from .models import (
     Inspecoes,
     Usuarios
 )
-from datetime import datetime
-from .models import Usuarios
+
+def is_admin(user):
+    return user.is_authenticated and user.nivel_acesso == "ADMIN"
+
+def is_staff_or_admin(user):
+    return user.is_authenticated and user.nivel_acesso in ["ADMIN", "STAFF"]
+
+def is_user(user):
+    return user.is_authenticated and user.nivel_acesso == "USER"
 
 
-def usuario_admin(request: HttpRequest):
-
-    if not request.user.is_staff:
-        return HttpResponseForbidden(
-            'Você não possui permissão para acessar esta função.'
-        )
-
+def deny_if_not(condition, message="Sem permissão"):
+    if not condition:
+        return HttpResponseForbidden(message)
     return None
 
 
@@ -31,6 +39,7 @@ def usuario_admin(request: HttpRequest):
 # e retornam uma resposta.
 
 def index(request: HttpRequest):
+
     if request.user.is_authenticated:
         return redirect('dashboard')
 
@@ -55,6 +64,7 @@ def index(request: HttpRequest):
 
     return render(request, 'login.html')
 
+
 @login_required
 def alterar_senha_obrigatoria(request: HttpRequest):
     if request.method == 'POST':
@@ -74,10 +84,17 @@ def alterar_senha_obrigatoria(request: HttpRequest):
 
 
 @login_required
+def sair(request: HttpRequest):
+    if request.method == 'POST':
+        logout(request)
+        return redirect('index')
+    return redirect('dashboard')
+
+
+@login_required
 def dashboard(request: HttpRequest):
 
     total_motores = Motores.objects.count()
-
     motores_em_manutencao = Inspecoes.objects.filter(status='EM ANDAMENTO').count()
 
     if request.user.is_staff:
@@ -86,7 +103,6 @@ def dashboard(request: HttpRequest):
 
     else:
         inspecoes_pendentes = Inspecoes.objects.filter(status='PENDENTE', id_usuario=request.user).count()
-
         ultimas_inspecoes = Inspecoes.objects.select_related('id_motor','id_usuario').filter(id_usuario=request.user).order_by('-id_inspecao')[:10]
 
     return render(request, 'dashboard.html', {
@@ -96,33 +112,29 @@ def dashboard(request: HttpRequest):
         'ultimas_inspecoes': ultimas_inspecoes
     })
 
-
-@login_required
-def sair(request: HttpRequest):
-    if request.method == 'POST':
-        logout(request)
-        return redirect('index')
-    return redirect('dashboard')
-
 @login_required
 def administrador(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     fabricantes = Fabricantes.objects.all().order_by('nome')
     tipos = TiposMotor.objects.all().order_by('descricao')
     locais = Locais.objects.all().order_by('nome')
-    usuarios = Usuarios.objects.all()
 
-    print("USUARIOS:", Usuarios.objects.all())
-    print("COUNT USERS:", Usuarios.objects.count())
+    if request.user.nivel_acesso == "ADMIN":
+        usuarios = Usuarios.objects.all().order_by("id_usuario")
+        pode_promover = True
+    else:
+        usuarios = Usuarios.objects.exclude(nivel_acesso="ADMIN").order_by("id_usuario")
+        pode_promover = False
 
     return render(request, 'administrador.html', {
+        'usuarios': usuarios,
+        'pode_promover': pode_promover,
         'fabricantes': fabricantes,
         'tipos': tipos,
-        'locais': locais,
-        'usuarios': usuarios
+        'locais': locais
     })
 
 '''
@@ -131,7 +143,8 @@ def administrador(request: HttpRequest):
 
 @login_required
 def usuarios(request: HttpRequest):
-    if not request.user.is_staff:
+    
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     usuarios = Usuarios.objects.all().order_by('nome')
@@ -143,7 +156,7 @@ def usuarios(request: HttpRequest):
 @login_required
 def novo_usuario(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     if request.method == 'POST':
@@ -155,16 +168,17 @@ def novo_usuario(request: HttpRequest):
         if not all([matricula, nome, senha]):
             return redirect('administrador')
 
-        usuario = Usuarios.objects.create_user(
-            matricula=str(matricula),
-            password=str(senha),
-            nome=str(nome)
-        )
+        usuario = Usuarios.objects.create_user(matricula=str(matricula), password=str(senha), nome=str(nome))
 
-        if request.POST.get('is_staff') == 'on':
-            usuario.is_staff = True
-            usuario.senha_temporaria = True
-            usuario.save()
+        if is_admin(request.user):
+            nivel = request.POST.get('nivel_acesso')
+
+            if nivel in ["STAFF", "USER"]:
+                usuario.nivel_acesso = nivel
+            else:
+                usuario.nivel_acesso = "USER"
+        else:
+            usuario.nivel_acesso = "USER"
 
         usuario.senha_temporaria = True
         usuario.save()
@@ -176,16 +190,22 @@ def novo_usuario(request: HttpRequest):
 @login_required
 def editar_usuario(request: HttpRequest, id_usuario: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
+
+    if request.user.nivel_acesso == "STAFF" and usuario.nivel_acesso in ["ADMIN", "STAFF"]:
+        return HttpResponseForbidden("Sem permissão.")
 
     if request.method == 'POST':
         usuario.nome = request.POST.get('nome', '').strip()
         usuario.matricula = request.POST.get('matricula', '').strip()
 
-        usuario.is_staff = True if request.POST.get('is_staff') == 'on' else False
+        if is_admin(request.user):
+            nivel = request.POST.get('nivel_acesso')
+            if nivel in ["ADMIN", "STAFF", "USER"]:
+                usuario.nivel_acesso = nivel
 
         usuario.save()
         return redirect('administrador')
@@ -197,10 +217,13 @@ def editar_usuario(request: HttpRequest, id_usuario: int):
 @login_required
 def deletar_usuario(request: HttpRequest, id_usuario: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
+
+    if request.user.nivel_acesso == "STAFF" and usuario.nivel_acesso in ["ADMIN", "STAFF"]:
+        return HttpResponseForbidden("Sem permissão.")
 
     if request.method == 'POST':
         usuario.delete()
@@ -213,10 +236,13 @@ def deletar_usuario(request: HttpRequest, id_usuario: int):
 @login_required
 def reset(request: HttpRequest, id_usuario: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
+
+    if request.user.nivel_acesso == "STAFF" and usuario.nivel_acesso != "USER":
+        return HttpResponseForbidden("Sem permissão.")
 
     if request.method == 'POST':
         nova_senha = request.POST.get('senha', '').strip()
@@ -235,12 +261,19 @@ def reset(request: HttpRequest, id_usuario: int):
 @login_required
 def promover(request: HttpRequest, id_usuario: int):
 
-    if not request.user.is_staff:
-        raise Http404()
+    if request.user.nivel_acesso != "ADMIN":
+        return HttpResponseForbidden("Apenas admin pode promover usuários.")
 
-    usuario = get_object_or_404(Usuarios, id=id_usuario)
+    usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
 
-    usuario.is_staff = not usuario.is_staff
+    if usuario.nivel_acesso == "ADMIN":
+        return HttpResponseForbidden("Não permitido alterar ADMIN.")
+
+    if usuario.nivel_acesso == "USER":
+        usuario.nivel_acesso = "STAFF"
+    elif usuario.nivel_acesso == "STAFF":
+        usuario.nivel_acesso = "USER"
+
     usuario.save()
 
     return redirect('administrador')
@@ -267,7 +300,7 @@ def fabricantes(request: HttpRequest):
 @login_required
 def novo_fabricante(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     # Essa view serve tanto para mostrar o formulário (GET)
@@ -297,7 +330,7 @@ def novo_fabricante(request: HttpRequest):
 @login_required
 def editar_fabricante(request: HttpRequest, id_fabricante: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     # Busca o fabricante
@@ -329,7 +362,7 @@ def editar_fabricante(request: HttpRequest, id_fabricante: int):
 @login_required
 def deletar_fabricante(request: HttpRequest, id_fabricante: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     # Busco o fabricante pelo ID.
@@ -354,7 +387,7 @@ def deletar_fabricante(request: HttpRequest, id_fabricante: int):
 @login_required
 def tipo_motor(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     meuTipoMotor = TiposMotor.objects.all().order_by('id_tipo')
@@ -367,7 +400,7 @@ def tipo_motor(request: HttpRequest):
 @login_required
 def novo_tipo_motor(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     if request.method == 'POST':
@@ -387,7 +420,7 @@ def novo_tipo_motor(request: HttpRequest):
 @login_required
 def editar_tipo_motor(request: HttpRequest, id_tipo: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     meuTipoMotor = get_object_or_404(TiposMotor, id_tipo=id_tipo)
@@ -410,7 +443,7 @@ def editar_tipo_motor(request: HttpRequest, id_tipo: int):
 @login_required
 def deletar_tipo_motor(request: HttpRequest, id_tipo: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     tipoMotor = get_object_or_404(TiposMotor, id_tipo=id_tipo)
@@ -429,7 +462,7 @@ def deletar_tipo_motor(request: HttpRequest, id_tipo: int):
 @login_required
 def locais(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
 
     meusLocais = Locais.objects.all().order_by('nome')
@@ -442,7 +475,7 @@ def locais(request: HttpRequest):
 @login_required
 def novo_local(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     if request.method == 'POST':
@@ -460,7 +493,7 @@ def novo_local(request: HttpRequest):
 @login_required
 def editar_local(request: HttpRequest, id_local: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     meuLocal = get_object_or_404(Locais, id_local=id_local)
@@ -482,7 +515,7 @@ def editar_local(request: HttpRequest, id_local: int):
 @login_required
 def deletar_local(request: HttpRequest, id_local: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     meuLocal = get_object_or_404(Locais, id_local=id_local)
@@ -517,7 +550,7 @@ def inventario(request: HttpRequest):
 @login_required
 def adicionar_motor(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     # Antes de tudo, busco os dados das tabelas relacionadas.
@@ -575,7 +608,7 @@ def adicionar_motor(request: HttpRequest):
 @login_required
 def editar_motor(request: HttpRequest, id_motor: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     meuMotor = get_object_or_404(Motores, id_motor=id_motor)
@@ -624,7 +657,7 @@ def editar_motor(request: HttpRequest, id_motor: int):
 @login_required
 def excluir_motor(request: HttpRequest, id_motor: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     motor = get_object_or_404(Motores, id_motor=id_motor)
@@ -670,7 +703,7 @@ def inspecoes(request: HttpRequest):
 @login_required
 def nova_inspecao(request: HttpRequest):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     if request.method == 'POST':
@@ -733,7 +766,7 @@ def concluir_inspecao(request: HttpRequest, id_inspecao: int):
 @login_required
 def editar_inspecao(request: HttpRequest, id_inspecao: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     minhaInspecao = get_object_or_404(Inspecoes, id_inspecao=id_inspecao)
@@ -771,7 +804,7 @@ def editar_inspecao(request: HttpRequest, id_inspecao: int):
 @login_required
 def deletar_inspecao(request: HttpRequest, id_inspecao: int):
 
-    if not request.user.is_staff:
+    if not is_staff_or_admin(request.user):
         raise Http404()
     
     minhaInspecao = get_object_or_404(Inspecoes, id_inspecao=id_inspecao)

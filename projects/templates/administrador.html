@@ -13,24 +13,30 @@
     <div class="d-flex vh-100">
 
         <!-- SIDEBAR -->
-        <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 220px; height: 100vh;">
+        <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 240px; height: 100vh;">
             <div>
                 <h5 class="text-primary mb-4">MotorMind</h5>
-
-                <nav class="nav flex-column">
-                    <a href="{% url 'dashboard' %}" class="nav-link text-primary">Dashboard</a>
-                    <a href="{% url 'inventario' %}" class="nav-link text-dark">Inventário</a>
-                    <a href="{% url 'inspecoes' %}" class="nav-link text-dark">Inspeções</a>
-                    {% if request.user.is_staff %}
-                        <a href="{% url 'administrador' %}" class="nav-link text-primary">Painel de Admin</a>
+                <nav class="nav flex-column gap-1">
+                    <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Dashboard</a>
+                    <a href="{% url 'inventario' %}" class="nav-link {% if request.resolver_match.url_name == 'inventario' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inventário</a>
+                    <a href="{% url 'inspecoes' %}" class="nav-link {% if request.resolver_match.url_name == 'inspecoes' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inspeções</a>
+                    {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                        <a href="{% url 'administrador' %}" class="nav-link {% if request.resolver_match.url_name == 'administrador' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Painel Administrativo</a>
                     {% endif %}
                 </nav>
             </div>
 
-            <div class="mt-auto">
+            <div class="mt-auto pt-3 border-top">
+                <div class="mb-2">
+                    <small class="text-muted">Logado como</small><br>
+                    <strong>{{ request.user.nome }}</strong>
+                    <div>
+                        <span class="badge bg-secondary">{{ request.user.nivel_acesso }}</span>
+                    </div>
+                </div>
+
                 <form action="{% url 'sair' %}" method="POST">
                     {% csrf_token %}
-                    <p>Bem-vindo {{ request.user.nome }}</p>
                     <button type="submit" class="btn btn-outline-danger w-100">Sair</button>
                 </form>
             </div>
@@ -86,40 +92,58 @@
                 </div>
 
                 <div class="modal-body">
-                    <table class="table table-hover align-middle">
+                    <div class="mb-3">
+                        <input type="text" class="form-control js-filter" data-target="usuarios" placeholder="Buscar usuário...">
+                    </div>
+                    <table class="table table-hover align-middle js-table" data-name="usuarios">
                         <thead class="table-light">
                             <tr>
                                 <th>ID</th>
                                 <th>Matrícula</th>
                                 <th>Nome</th>
-                                <th>Admin</th>
+                                <th>Nível</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
 
-                        <tbody>
-
+                        <tbody id="tbodyUsuarios">
                             {% for usuario in usuarios %}
-                            <tr>
-                                <td>{{ usuario.id_usuario }}</td>
-                                <td>{{ usuario.matricula }}</td>
-                                <td>{{ usuario.nome }}</td>
-                                <td>
-                                    {% if usuario.is_staff %}
-                                        <span class="badge bg-danger">Admin</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Usuário</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarUsuario{{ usuario.id_usuario }}">Editar</button>
-                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirUsuario{{ usuario.id_usuario }}">Excluir</button>
-                                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#resetSenha{{ usuario.id_usuario }}">Reset senha</button>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td>{{ usuario.id_usuario }}</td>
+                                    <td>{{ usuario.matricula }}</td>
+                                    <td>{{ usuario.nome }}</td>
+
+                                    <td>
+                                        {% if usuario.nivel_acesso == "ADMIN" %}
+                                            <span class="badge bg-danger">ADMIN</span>
+                                        {% elif usuario.nivel_acesso == "STAFF" %}
+                                            <span class="badge bg-warning text-dark">STAFF</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">USER</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarUsuario{{ usuario.id_usuario }}">Editar</button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirUsuario{{ usuario.id_usuario }}">Excluir</button>
+                                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#resetSenha{{ usuario.id_usuario }}">Reset senha</button>
+
+                                        {% if pode_promover and usuario.id_usuario != request.user.id_usuario and usuario.nivel_acesso != "ADMIN" %}
+                                            <form method="POST" action="{% url 'promover' usuario.id_usuario %}" style="display:inline;">
+                                                {% csrf_token %}
+
+                                                {% if usuario.nivel_acesso == "STAFF" %}
+                                                    <button type="submit" class="btn btn-sm btn-dark">Remover staff</button>
+                                                {% else %}
+                                                    <button type="submit" class="btn btn-sm btn-success">Promover staff</button>
+                                                {% endif %}
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted">Nenhum usuário encontrado</td>
+                                    <td colspan="5" class="text-center text-muted">Nenhum usuário encontrado</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -211,9 +235,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-warning">Salvar</button>
                     </div>
-
                 </form>
-
             </div>
         </div>
     </div>
@@ -221,14 +243,10 @@
     <div class="modal fade" id="excluirUsuario{{ usuario.id_usuario }}" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-
                 <form method="POST" action="{% url 'deletar_usuario' usuario.id_usuario %}">
                     {% csrf_token %}
-
                     <div class="modal-header">
-                        <h5 class="modal-title text-danger">
-                            Excluir usuário
-                        </h5>
+                        <h5 class="modal-title text-danger">Excluir usuário</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
 
@@ -237,17 +255,10 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            Cancelar
-                        </button>
-
-                        <button type="submit" class="btn btn-danger">
-                            Excluir
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Excluir</button>
                     </div>
-
                 </form>
-
             </div>
         </div>
     </div>
@@ -255,49 +266,30 @@
     <div class="modal fade" id="resetSenha{{ usuario.id_usuario }}" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-
                 <form method="POST" action="{% url 'reset' usuario.id_usuario %}">
                     {% csrf_token %}
-
                     <div class="modal-header">
-                        <h5 class="modal-title text-secondary">
-                            Resetar senha
-                        </h5>
+                        <h5 class="modal-title text-secondary">Resetar senha</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
 
                     <div class="modal-body">
-
                         <p class="text-muted">
                             Defina uma nova senha para <strong>{{ usuario.nome }}</strong>
                         </p>
 
                         <div class="mb-3">
                             <label>Nova senha</label>
-                            <input type="password"
-                                name="senha"
-                                class="form-control"
-                                placeholder="Digite a nova senha"
-                                required>
+                            <input type="password" name="senha" class="form-control" placeholder="Digite a nova senha" required>
                         </div>
 
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button"
-                                class="btn btn-secondary"
-                                data-bs-dismiss="modal">
-                            Cancelar
-                        </button>
-
-                        <button type="submit"
-                                class="btn btn-secondary">
-                            Resetar senha
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-secondary">Resetar senha</button>
                     </div>
-
                 </form>
-
             </div>
         </div>
     </div>
@@ -308,14 +300,14 @@
     <div class="modal fade" id="modalFabricantes" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
-
                 <div class="modal-header">
                     <h5 class="modal-title text-primary">Fabricantes</h5>
                     <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
-                    <table class="table table-hover">
+                    <input class="form-control js-filter" data-target="fabricantes" placeholder="Buscar fabricantes...">
+                    <table class="table table-hover align-middle js-table" data-name="fabricantes">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -334,6 +326,10 @@
                                     <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirFabricante{{ f.id_fabricante }}">Excluir</button>
                                 </td>
                             </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Nenhum fabricante encontrado</td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -349,7 +345,7 @@
                     {% csrf_token %}
                     <div class="modal-header">
                         <h5 class="modal-title">Novo Fabricante</h5>
-                        <button class="btn-close" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
 
                     <div class="modal-body">
@@ -357,7 +353,7 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button class="btn btn-primary">Salvar</button>
                     </div>
                 </form>
@@ -425,7 +421,8 @@
                 </div>
 
                 <div class="modal-body">
-                    <table class="table table-hover align-middle">
+                    <input class="form-control js-filter" data-target="tipos" placeholder="Buscar tipos...">
+                    <table class="table table-hover align-middle js-table" data-name="tipos">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -439,24 +436,13 @@
                                 <td>{{ tipo.id_tipo }}</td>
                                 <td>{{ tipo.descricao }}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-warning"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#editarTipo{{ tipo.id_tipo }}">
-                                        Editar
-                                    </button>
-
-                                    <button class="btn btn-sm btn-outline-danger"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#excluirTipo{{ tipo.id_tipo }}">
-                                        Excluir
-                                    </button>
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarTipo{{ tipo.id_tipo }}">Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirTipo{{ tipo.id_tipo }}">Excluir</button>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="3" class="text-center text-muted">
-                                    Nenhum tipo encontrado
-                                </td>
+                                <td colspan="3" class="text-center text-muted">Nenhum tipo encontrado</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -477,20 +463,12 @@
                     </div>
 
                     <div class="modal-body">
-                        <input type="text"
-                            name="descricao"
-                            class="form-control"
-                            placeholder="Descrição do tipo"
-                            required>
+                        <input type="text" name="descricao" class="form-control" placeholder="Descrição do tipo" required>
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            Salvar
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
                     </div>
                 </form>
             </div>
@@ -510,20 +488,12 @@
                         </div>
 
                         <div class="modal-body">
-                            <input type="text"
-                                name="descricao"
-                                class="form-control"
-                                value="{{ tipo.descricao }}"
-                                required>
+                            <input type="text" name="descricao" class="form-control" value="{{ tipo.descricao }}" required>
                         </div>
 
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                Cancelar
-                            </button>
-                            <button type="submit" class="btn btn-warning">
-                                Salvar
-                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-warning">Salvar</button>
                         </div>
                     </form>
                 </div>
@@ -566,7 +536,8 @@
                 </div>
 
                 <div class="modal-body">
-                    <table class="table table-hover align-middle">
+                    <input class="form-control js-filter" data-target="locais" placeholder="Buscar locais...">
+                    <table class="table table-hover align-middle js-table" data-name="locais">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -581,24 +552,13 @@
                                 <td>{{ local.id_local }}</td>
                                 <td>{{ local.nome }}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-warning"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#editarLocal{{ local.id_local }}">
-                                        Editar
-                                    </button>
-
-                                    <button class="btn btn-sm btn-outline-danger"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#excluirLocal{{ local.id_local }}">
-                                        Excluir
-                                    </button>
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarLocal{{ local.id_local }}">Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirLocal{{ local.id_local }}">Excluir</button>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="3" class="text-center text-muted">
-                                    Nenhum local encontrado
-                                </td>
+                                <td colspan="3" class="text-center text-muted">Nenhum local encontrado</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -619,11 +579,7 @@
                     </div>
 
                     <div class="modal-body">
-                        <input type="text"
-                            name="nome"
-                            class="form-control"
-                            placeholder="Nome do local"
-                            required>
+                        <input type="text" name="nome" class="form-control" placeholder="Nome do local" required>
                     </div>
 
                     <div class="modal-footer">
@@ -648,11 +604,7 @@
                         </div>
 
                         <div class="modal-body">
-                            <input type="text"
-                                name="nome"
-                                class="form-control"
-                                value="{{ local.nome }}"
-                                required>
+                            <input type="text" name="nome" class="form-control" value="{{ local.nome }}" required>
                         </div>
 
                         <div class="modal-footer">

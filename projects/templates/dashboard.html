@@ -13,24 +13,30 @@
     <div class="d-flex vh-100">
 
         <!-- SIDEBAR -->
-        <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 220px; height: 100vh;">
+        <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 240px; height: 100vh;">
             <div>
                 <h5 class="text-primary mb-4">MotorMind</h5>
-
-                <nav class="nav flex-column">
-                    <a href="{% url 'dashboard' %}" class="nav-link text-primary">Dashboard</a>
-                    <a href="{% url 'inventario' %}" class="nav-link text-dark">Inventário</a>
-                    <a href="{% url 'inspecoes' %}" class="nav-link text-dark">Inspeções</a>
-                    {% if request.user.is_staff %}
-                        <a href="{% url 'administrador' %}" class="nav-link text-primary">Painel de Admin</a>
+                <nav class="nav flex-column gap-1">
+                    <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Dashboard</a>
+                    <a href="{% url 'inventario' %}" class="nav-link {% if request.resolver_match.url_name == 'inventario' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inventário</a>
+                    <a href="{% url 'inspecoes' %}" class="nav-link {% if request.resolver_match.url_name == 'inspecoes' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inspeções</a>
+                    {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                        <a href="{% url 'administrador' %}" class="nav-link {% if request.resolver_match.url_name == 'administrador' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Painel Administrativo</a>
                     {% endif %}
                 </nav>
             </div>
 
-            <div class="mt-auto">
+            <div class="mt-auto pt-3 border-top">
+                <div class="mb-2">
+                    <small class="text-muted">Logado como</small><br>
+                    <strong>{{ request.user.nome }}</strong>
+                    <div>
+                        <span class="badge bg-secondary">{{ request.user.nivel_acesso }}</span>
+                    </div>
+                </div>
+
                 <form action="{% url 'sair' %}" method="POST">
                     {% csrf_token %}
-                    <p>Bem-vindo {{ request.user.nome }}</p>
                     <button type="submit" class="btn btn-outline-danger w-100">Sair</button>
                 </form>
             </div>

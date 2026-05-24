@@ -38,11 +38,7 @@ class UsuarioManager(BaseUserManager["Usuarios"]):
         if not matricula:
             raise ValueError("Matrícula obrigatória")
 
-        user = self.model(
-            matricula=matricula,
-            nome=nome,
-            **extra_fields
-        )
+        user = self.model(matricula=matricula, nome=nome, **extra_fields)
 
         user.set_password(password)
         user.save(using=self._db)
@@ -53,20 +49,30 @@ class UsuarioManager(BaseUserManager["Usuarios"]):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("nivel_acesso", Usuarios.NivelAcesso.ADMIN)
 
         return self.create_user(matricula, nome, password, **extra_fields)
-    
+
 
 class Usuarios(AbstractBaseUser, PermissionsMixin):
+
+    class NivelAcesso(models.TextChoices):
+        ADMIN = "ADMIN", "Admin"
+        STAFF = "STAFF", "Staff"
+        USER = "USER", "User"
 
     id_usuario = models.AutoField(primary_key=True)
 
     matricula = models.CharField(max_length=20, unique=True)
     nome = models.CharField(max_length=100)
+
     senha_temporaria = models.BooleanField(default=True)
 
-    is_staff = models.BooleanField(default=False)
+    nivel_acesso = models.CharField(max_length=10, choices=NivelAcesso.choices, default=NivelAcesso.USER)
+
     is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
 
     USERNAME_FIELD = "matricula"
     REQUIRED_FIELDS = ["nome"]
