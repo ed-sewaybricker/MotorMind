@@ -1,0 +1,645 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Administrador - MotorMind
+{% endblock %}
+
+{% block body_class %}
+    bg-white text-dark
+{% endblock %}
+
+{% block content %}
+
+    <div class="d-flex vh-100">
+
+        <!-- SIDEBAR -->
+        <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 240px; height: 100vh;">
+            <div>
+                <h5 class="text-primary mb-4">MotorMind</h5>
+                <nav class="nav flex-column gap-1">
+                    <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Dashboard</a>
+                    <a href="{% url 'inventario' %}" class="nav-link {% if request.resolver_match.url_name == 'inventario' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inventário</a>
+                    <a href="{% url 'inspecoes' %}" class="nav-link {% if request.resolver_match.url_name == 'inspecoes' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inspeções</a>
+                    {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                        <a href="{% url 'administrador' %}" class="nav-link {% if request.resolver_match.url_name == 'administrador' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Painel Administrativo</a>
+                    {% endif %}
+                </nav>
+            </div>
+
+            <div class="mt-auto pt-3 border-top">
+                <div class="mb-2">
+                    <small class="text-muted">Logado como</small><br>
+                    <strong>{{ request.user.nome }}</strong>
+                    <div>
+                        <span class="badge bg-secondary">{{ request.user.nivel_acesso }}</span>
+                    </div>
+                </div>
+
+                <form action="{% url 'sair' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger w-100">Sair</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO -->
+        <div class="p-4 w-100">
+            <h2 class="text-primary mb-1">Painel do Administrador</h2>
+            <p class="text-muted mb-4">Gerencie os usuários, fabricantes, tipos de motores e locais</p>
+
+            <div class="mb-5">
+                <h4 class="text-primary">Usuários</h4>
+                <div class="d-flex gap-3 mb-3">
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUsuarios">Ver Usuários</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoUsuario">+ Adicionar Usuário</button>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <h4 class="text-primary">Fabricantes</h4>
+                <div class="d-flex gap-3 mb-3">
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalFabricantes">Ver Fabricantes</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoFabricante">+ Adicionar Fabricante</button>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <h4 class="text-primary">Tipos de Motor</h4>
+                <div class="d-flex gap-3 mb-3">
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTiposMotor">Ver Tipos</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoTipoMotor">+ Adicionar Tipo</button>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <h4 class="text-primary">Locais</h4>
+                <div class="d-flex gap-3 mb-3">
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalLocais">Ver Locais</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoLocal">+ Adicionar Local</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL LISTA DE USUÁRIOS -->
+    <div class="modal fade" id="modalUsuarios" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary">Usuários</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" class="form-control js-filter" data-target="usuarios" placeholder="Buscar usuário...">
+                    </div>
+                    <table class="table table-hover align-middle js-table" data-name="usuarios">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Matrícula</th>
+                                <th>Nome</th>
+                                <th>Nível</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tbodyUsuarios">
+                            {% for usuario in usuarios %}
+                                <tr>
+                                    <td>{{ usuario.id_usuario }}</td>
+                                    <td>{{ usuario.matricula }}</td>
+                                    <td>{{ usuario.nome }}</td>
+
+                                    <td>
+                                        {% if usuario.nivel_acesso == "ADMIN" %}
+                                            <span class="badge bg-danger">ADMIN</span>
+                                        {% elif usuario.nivel_acesso == "STAFF" %}
+                                            <span class="badge bg-warning text-dark">STAFF</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">USER</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarUsuario{{ usuario.id_usuario }}">Editar</button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirUsuario{{ usuario.id_usuario }}">Excluir</button>
+                                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#resetSenha{{ usuario.id_usuario }}">Reset senha</button>
+
+                                        {% if pode_promover and usuario.id_usuario != request.user.id_usuario and usuario.nivel_acesso != "ADMIN" %}
+                                            <form method="POST" action="{% url 'promover' usuario.id_usuario %}" style="display:inline;">
+                                                {% csrf_token %}
+
+                                                {% if usuario.nivel_acesso == "STAFF" %}
+                                                    <button type="submit" class="btn btn-sm btn-dark">Remover staff</button>
+                                                {% else %}
+                                                    <button type="submit" class="btn btn-sm btn-success">Promover staff</button>
+                                                {% endif %}
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Nenhum usuário encontrado</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NOVO USUÁRIO -->
+    <div class="modal fade" id="modalNovoUsuario" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <form method="POST" action="{% url 'novo_usuario' %}">
+                    {% csrf_token %}
+
+                    <div class="modal-header">
+                        <h5 class="modal-title text-primary">Novo Usuário</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+                            <label class="form-label">Matrícula</label>
+                            <input type="text" name="matricula" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome</label>
+                            <input type="text" name="nome" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Senha inicial</label>
+                            <input type="password" name="senha" class="form-control" required>
+                        </div>
+
+                        <!-- opcional: já criar como admin -->
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_staff" id="isStaff">
+                            <label class="form-check-label" for="isStaff">Criar como administrador</label>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Criar usuário</button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    {% for usuario in usuarios %}
+    <div class="modal fade" id="editarUsuario{{ usuario.id_usuario }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'editar_usuario' usuario.id_usuario %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title text-warning">Editar Usuário</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label>Matrícula</label>
+                            <input type="text" name="matricula" class="form-control" value="{{ usuario.matricula }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Nome</label>
+                            <input type="text" name="nome" class="form-control" value="{{ usuario.nome }}">
+                        </div>
+
+                        <div class="form-check">
+                            <input type="checkbox" name="is_staff" class="form-check-input" {% if usuario.is_staff %}checked{% endif %}>
+                            <label class="form-check-label">Admin</label>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="excluirUsuario{{ usuario.id_usuario }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'deletar_usuario' usuario.id_usuario %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title text-danger">Excluir usuário</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <p>Tem certeza que deseja excluir <strong>{{ usuario.nome }}</strong>?</p>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="resetSenha{{ usuario.id_usuario }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'reset' usuario.id_usuario %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title text-secondary">Resetar senha</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <p class="text-muted">
+                            Defina uma nova senha para <strong>{{ usuario.nome }}</strong>
+                        </p>
+
+                        <div class="mb-3">
+                            <label>Nova senha</label>
+                            <input type="password" name="senha" class="form-control" placeholder="Digite a nova senha" required>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-secondary">Resetar senha</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- MODAIS FABRICANTES -->
+
+    <div class="modal fade" id="modalFabricantes" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary">Fabricantes</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input class="form-control js-filter" data-target="fabricantes" placeholder="Buscar fabricantes...">
+                    <table class="table table-hover align-middle js-table" data-name="fabricantes">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for f in fabricantes %}
+                            <tr>
+                                <td>{{ f.id_fabricante }}</td>
+                                <td>{{ f.nome }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarFabricante{{ f.id_fabricante }}">Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirFabricante{{ f.id_fabricante }}">Excluir</button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Nenhum fabricante encontrado</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalNovoFabricante" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'novo_fabricante' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title">Novo Fabricante</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <input type="text" name="nome" class="form-control" placeholder="Nome">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% for f in fabricantes %}
+        <div class="modal fade" id="editarFabricante{{ f.id_fabricante }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{% url 'editar_fabricante' f.id_fabricante %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title text-warning">Editar Fabricante</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <label class="form-label">Nome</label>
+                            <input type="text" name="nome" class="form-control" value="{{ f.nome }}" required>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-warning">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="excluirFabricante{{ f.id_fabricante }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{% url 'deletar_fabricante' f.id_fabricante %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title text-danger">Excluir Fabricante</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <p>Tem certeza que deseja excluir o fabricante:</p>
+                            <strong>{{ f.nome }}</strong>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-danger">Excluir</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- MODAIS TIPOS DE MOTORES -->
+    <div class="modal fade" id="modalTiposMotor" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary">Tipos de Motor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input class="form-control js-filter" data-target="tipos" placeholder="Buscar tipos...">
+                    <table class="table table-hover align-middle js-table" data-name="tipos">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Descrição</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tipo in tipos %}
+                            <tr>
+                                <td>{{ tipo.id_tipo }}</td>
+                                <td>{{ tipo.descricao }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarTipo{{ tipo.id_tipo }}">Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirTipo{{ tipo.id_tipo }}">Excluir</button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Nenhum tipo encontrado</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalNovoTipoMotor" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'novo_tipo_motor' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title text-primary">Novo Tipo de Motor</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <input type="text" name="descricao" class="form-control" placeholder="Descrição do tipo" required>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% for tipo in tipos %}
+        <!-- EDITAR -->
+        <div class="modal fade" id="editarTipo{{ tipo.id_tipo }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{% url 'editar_tipo_motor' tipo.id_tipo %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title text-warning">Editar Tipo</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <input type="text" name="descricao" class="form-control" value="{{ tipo.descricao }}" required>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-warning">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- EXCLUIR -->
+        <div class="modal fade" id="excluirTipo{{ tipo.id_tipo }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{% url 'deletar_tipo_motor' tipo.id_tipo %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title text-danger">Excluir Tipo</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <p>Tem certeza que deseja excluir o tipo:</p>
+                            <strong>{{ tipo.descricao }}</strong>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-danger">Excluir</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- MODAIS LOCAIS -->
+    <div class="modal fade" id="modalLocais" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary">Locais</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input class="form-control js-filter" data-target="locais" placeholder="Buscar locais...">
+                    <table class="table table-hover align-middle js-table" data-name="locais">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for local in locais %}
+                            <tr>
+                                <td>{{ local.id_local }}</td>
+                                <td>{{ local.nome }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarLocal{{ local.id_local }}">Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluirLocal{{ local.id_local }}">Excluir</button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Nenhum local encontrado</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalNovoLocal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'novo_local' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title text-primary">Novo Local</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <input type="text" name="nome" class="form-control" placeholder="Nome do local" required>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% for local in locais %}
+        <!-- EDITAR -->
+        <div class="modal fade" id="editarLocal{{ local.id_local }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{% url 'editar_local' local.id_local %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title text-warning">Editar Local</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <input type="text" name="nome" class="form-control" value="{{ local.nome }}" required>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-warning">Salvar</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- EXCLUIR -->
+        <div class="modal fade" id="excluirLocal{{ local.id_local }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{% url 'deletar_local' local.id_local %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title text-danger">Excluir Local</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <p>Tem certeza que deseja excluir:</p>
+                            <strong>{{ local.nome }}</strong>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-danger">Excluir</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

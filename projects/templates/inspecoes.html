@@ -1,0 +1,172 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Inspeções - MotorMind
+{% endblock %}
+
+{% block body_class %}
+    bg-white text-dark
+{% endblock %}
+
+{% block content %}
+
+    <div class="d-flex vh-100">
+
+        <!-- SIDEBAR -->
+        <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 240px; height: 100vh;">
+            <div>
+                <h5 class="text-primary mb-4">MotorMind</h5>
+                <nav class="nav flex-column gap-1">
+                    <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Dashboard</a>
+                    <a href="{% url 'inventario' %}" class="nav-link {% if request.resolver_match.url_name == 'inventario' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inventário</a>
+                    <a href="{% url 'inspecoes' %}" class="nav-link {% if request.resolver_match.url_name == 'inspecoes' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inspeções</a>
+                    {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                        <a href="{% url 'administrador' %}" class="nav-link {% if request.resolver_match.url_name == 'administrador' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Painel Administrativo</a>
+                    {% endif %}
+                </nav>
+            </div>
+
+            <div class="mt-auto pt-3 border-top">
+                <div class="mb-2">
+                    <small class="text-muted">Logado como</small><br>
+                    <strong>{{ request.user.nome }}</strong>
+                    <div>
+                        <span class="badge bg-secondary">{{ request.user.nivel_acesso }}</span>
+                    </div>
+                </div>
+
+                <form action="{% url 'sair' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger w-100">Sair</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO -->
+        <div class="flex-grow-1 p-4 overflow-auto">
+
+            <h2 class="text-primary mb-3">Inspeções</h2>
+
+            {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                <!-- BOTÃO QUE ABRE O MODAL -->
+                <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#modalInspecao">
+                    + Nova Inspeção
+                </button>
+            {% endif %}
+
+            <div class="row g-3">
+
+                <!-- PENDENTE -->
+                <div class="col-md-4">
+                    <h6 class="text-muted text-decoration-underline">PENDENTE</h6>
+                    {% for i in pendentes %}
+                        <div class="card bg-white border-danger border-2 shadow-sm text-dark p-3 mb-2">
+                            <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
+                            <p class="mb-1">{{ i.observacoes }}</p>
+                            <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
+                            <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
+                            <form action="{% url 'iniciar_inspecao' i.id_inspecao %}" method="POST">
+                                {% csrf_token %}
+                                <button class="btn btn-warning btn-sm mt-2">Iniciar Inspeção</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- EM ANDAMENTO -->
+                <div class="col-md-4">
+                    <h6 class="text-muted text-decoration-underline">EM ANDAMENTO</h6>
+                    {% for i in em_andamento %}
+                        <div class="card bg-white border-warning border-2 shadow-sm text-dark p-3 mb-2">
+                            <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
+                            <p class="mb-1">{{ i.observacoes }}</p>
+                            <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
+                            <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
+                            <small class="text-muted">Iniciado em: {{ i.data_inicio|date:"d/m/Y H:i" }}</small>
+                            
+                            <form action="{% url 'concluir_inspecao' i.id_inspecao %}" method="POST">
+                                {% csrf_token %}
+                                <button class="btn btn-success btn-sm mt-2">Concluir Inspeção</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- CONCLUÍDO -->
+                <div class="col-md-4">
+                    <h6 class="text-muted text-decoration-underline">CONCLUÍDO</h6>
+                    {% for i in concluidas %}
+                        <div class="card bg-white border-success border-2 shadow-sm text-dark p-3 mb-2">
+                            <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
+                            <p class="mb-1">{{ i.observacoes }}</p>
+                            <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
+                            <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
+                            <small class="text-muted">Início: {{ i.data_inicio|date:"d/m/Y H:i" }}</small>
+                            <small class="text-muted">Conclusão: {{ i.data_conclusao|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal fade" id="modalInspecao" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary">Nova Inspeção</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <form action="{% url 'nova_inspecao' %}" method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Motor</label>
+                            <select name="motor" class="form-select" required>
+                                <option value="">Selecione um motor</option>
+                                {% for motor in motores %}
+                                    <option value="{{ motor.id_motor }}">{{ motor.modelo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Data</label>
+                            <input type="date" name="data_inspecao" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Responsável</label>
+                            <select name="responsavel" class="form-select" required>
+                                <option value="">Selecione um responsável</option>
+                                {% for usuario in usuarios %}
+                                    <option value="{{ usuario.id_usuario }}">{{ usuario.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea name="observacoes" class="form-control" rows="3" required></textarea>
+                        </div>
+
+                        <div class="text-end">
+                            <button class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+</html>
