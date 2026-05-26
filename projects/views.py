@@ -207,6 +207,11 @@ def editar_usuario(request: HttpRequest, id_usuario: int):
         usuario.nome = request.POST.get('nome', '').strip()
         usuario.matricula = request.POST.get('matricula', '').strip()
 
+        usuario_existente = Usuarios.objects.filter(matricula=usuario.matricula).exists()
+
+        if usuario_existente:
+            return redirect('administrador')
+
         if is_admin(request.user):
             nivel = request.POST.get('nivel_acesso')
             if nivel in ["ADMIN", "STAFF", "USER"]:
