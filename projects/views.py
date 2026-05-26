@@ -167,6 +167,11 @@ def novo_usuario(request: HttpRequest):
 
         if not all([matricula, nome, senha]):
             return redirect('administrador')
+        
+        usuario_existente = Usuarios.objects.filter(matricula=matricula).exists()
+
+        if usuario_existente:
+            return redirect('administrador')
 
         usuario = Usuarios.objects.create_user(matricula=str(matricula), password=str(senha), nome=str(nome))
 
