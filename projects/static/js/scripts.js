@@ -29,4 +29,30 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     initFilters();
+
+    // Limpa formulários quando o modal fecha
+    const modais = document.querySelectorAll('.modal');
+
+    modais.forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', function () {
+
+            const form = modal.querySelector('form');
+
+            if (!form) return;
+
+            // Não limpar formulários de edição
+            if (
+                modal.id.startsWith('editar') ||
+                modal.id.startsWith('editarUsuario') ||
+                modal.id.startsWith('editarFabricante') ||
+                modal.id.startsWith('editarTipo') ||
+                modal.id.startsWith('editarLocal')
+            ) {
+                form.reset();
+                return;
+            }
+
+            form.reset();
+        });
+    });
 });

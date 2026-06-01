@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="d-flex vh-100">
+    <div class="d-flex vh-100 overflow-hidden">
 
         <!-- SIDEBAR -->
         <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 240px; height: 100vh;">
@@ -42,13 +42,13 @@
         </div>
 
         <!-- CONTEÚDO -->
-        <div class="p-4 w-100">
+        <div class="p-4 w-100 d-flex flex-column overflow-hidden">
 
             <h2 class="text-primary mb-1">Inventário de Motores</h2>
             <p class="text-muted mb-3">Lista de motores cadastrados no sistema.</p>
 
             {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
-                <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#modalAdicionar">
+                <button class="btn btn-primary mb-4 align-self-start" data-bs-toggle="modal" data-bs-target="#modalAdicionar">
                     + Adicionar Motor
                 </button>
             {% endif %}
@@ -57,193 +57,195 @@
                 <input type="text" class="form-control js-filter" data-target="motores" placeholder="Buscar motor...">
             </div>
 
-            <table class="table table-hover js-table" data-name="motores">
-                <thead class="table-light">
-                    <tr class="text-primary">
-                        <th>Produto</th>
-                        <th>Fabricante</th>
-                        <th>Local de Instalação</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for x in meusMotores %}
-                        <tr>
-                            <td>{{ x.modelo }}</td>
-                            <td>{{ x.id_fabricante.nome }}</td>
-                            <td>{{ x.id_local.nome }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal"
-                                    data-bs-target="#ver{{ x.id_motor }}">Ver</button>
-
-                                {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
-                                    <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal"
-                                        data-bs-target="#editar{{ x.id_motor }}">Editar</button>
-
-                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
-                                        data-bs-target="#excluir{{ x.id_motor }}">Excluir</button>
-                                {% endif %}
-                            </td>
+            <div class="flex-grow-1 overflow-auto table-scroll">
+                <table class="table table-hover js-table" data-name="motores">
+                    <thead class="table-light">
+                        <tr class="text-primary">
+                            <th>Produto</th>
+                            <th>Fabricante</th>
+                            <th>Local de Instalação</th>
+                            <th>Ações</th>
                         </tr>
+                    </thead>
+                    <tbody>
+                        {% for x in meusMotores %}
+                            <tr>
+                                <td>{{ x.modelo }}</td>
+                                <td>{{ x.id_fabricante.nome }}</td>
+                                <td>{{ x.id_local.nome }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal"
+                                        data-bs-target="#ver{{ x.id_motor }}">Ver</button>
 
-                        <!-- ===== MODAL VER ===== -->
+                                    {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                                        <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal"
+                                            data-bs-target="#editar{{ x.id_motor }}">Editar</button>
 
-                        <div class="modal fade" id="ver{{ x.id_motor }}" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
+                                            data-bs-target="#excluir{{ x.id_motor }}">Excluir</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Nenhum motor encontrado.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% for x in meusMotores %}
+                <!-- ===== MODAL VER ===== -->
+                <div class="modal fade" id="ver{{ x.id_motor }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
 
-                                    <div class="modal-header">
-                                        <h5 class="modal-title text-primary">{{ x.modelo }}</h5>
-                                        <button class="btn-close" data-bs-dismiss="modal"></button>
+                            <div class="modal-header">
+                                <h5 class="modal-title text-primary">{{ x.modelo }}</h5>
+                                <button class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <p><strong>Tipo:</strong> {{ x.id_tipo.descricao }}</p>
+                                <p><strong>Potência:</strong> {{ x.potencia }}</p>
+                                <p><strong>Tensão:</strong> {{ x.tensao }}</p>
+                                <p><strong>Corrente:</strong> {{ x.corrente }}</p>
+                                <p><strong>RPM:</strong> {{ x.rpm }}</p>
+                                <p><strong>Modo de Fixação:</strong> {{ x.modo_fixacao }}</p>
+                                <p><strong>Quantidade:</strong> {{ x.quantidade }}</p>
+                                <p><strong>Fabricante:</strong> {{ x.id_fabricante.nome }}</p>
+                                <p><strong>Área:</strong> {{ x.id_local.nome }}</p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== MODAIS EDITAR ===== -->
+
+                <div class="modal fade" id="editar{{ x.id_motor }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="{% url 'editar_motor' x.id_motor %}">
+                                {% csrf_token %}
+                                <div class="modal-header">
+                                    <h5 class="modal-title text-warning">Editar {{ x.modelo }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Modelo</label>
+                                        <input type="text" name="modelo" class="form-control" value="{{ x.modelo }}" required>
                                     </div>
 
-                                    <div class="modal-body">
-                                        <p><strong>Tipo:</strong> {{ x.id_tipo.descricao }}</p>
-                                        <p><strong>Potência:</strong> {{ x.potencia }}</p>
-                                        <p><strong>Tensão:</strong> {{ x.tensao }}</p>
-                                        <p><strong>Corrente:</strong> {{ x.corrente }}</p>
-                                        <p><strong>RPM:</strong> {{ x.rpm }}</p>
-                                        <p><strong>Modo de Fixação:</strong> {{ x.modo_fixacao }}</p>
-                                        <p><strong>Quantidade:</strong> {{ x.quantidade }}</p>
-                                        <p><strong>Fabricante:</strong> {{ x.id_fabricante.nome }}</p>
-                                        <p><strong>Área:</strong> {{ x.id_local.nome }}</p>
+                                    <div class="mb-3">
+                                        <label class="form-label">Potência</label>
+                                        <input type="text" name="potencia" class="form-control" value="{{ x.potencia }}" required>
                                     </div>
 
+                                    <div class="mb-3">
+                                        <label class="form-label">Tensão</label>
+                                        <input type="text" name="tensao" class="form-control" value="{{ x.tensao }}" required>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Corrente</label>
+                                        <input type="text" name="corrente" class="form-control" value="{{ x.corrente }}" required>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">RPM</label>
+                                        <input type="text" name="rpm" class="form-control" value="{{ x.rpm }}" required>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Modo de Fixação</label>
+                                        <input type="text" name="modo_fixacao" class="form-control" value="{{ x.modo_fixacao }}" required>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Quantidade</label>
+                                        <input type="number" name="quantidade" min="0" class="form-control" value="{{ x.quantidade }}" required>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Fabricante</label>
+                                        <select name="fabricante" class="form-select" required>
+                                            {% for f in fabricantes %}
+                                                <option value="{{ f.id_fabricante }}"
+                                                    {% if f.id_fabricante == x.id_fabricante.id_fabricante %}
+                                                    selected
+                                                    {% endif %}
+                                                >
+                                                    {{ f.nome }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Tipo</label>
+
+                                        <select name="tipo" class="form-select" required>
+                                            {% for t in tipos %}
+                                                <option value="{{ t.id_tipo }}"
+                                                    {% if t.id_tipo == x.id_tipo.id_tipo %}
+                                                        selected
+                                                    {% endif %}
+                                                >
+                                                    {{ t.descricao }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Local</label>
+
+                                        <select name="local" class="form-select" required>
+                                            {% for l in locais %}
+                                                <option value="{{ l.id_local }}"
+                                                    {% if l.id_local == x.id_local.id_local %}
+                                                        selected
+                                                    {% endif %}
+                                                >
+                                                    {{ l.nome }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- ===== MODAIS EDITAR ===== -->
-
-                        <div class="modal fade" id="editar{{ x.id_motor }}" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form method="POST" action="{% url 'editar_motor' x.id_motor %}">
-                                        {% csrf_token %}
-                                        <div class="modal-header">
-                                            <h5 class="modal-title text-warning">Editar {{ x.modelo }}</h5>
-                                            <button class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-
-                                        <div class="modal-body">
-                                            <div class="mb-3">
-                                                <label class="form-label">Modelo</label>
-                                                <input type="text" name="modelo" class="form-control" value="{{ x.modelo }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Potência</label>
-                                                <input type="text" name="potencia" class="form-control" value="{{ x.potencia }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Tensão</label>
-                                                <input type="text" name="tensao" class="form-control" value="{{ x.tensao }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Corrente</label>
-                                                <input type="text" name="corrente" class="form-control" value="{{ x.corrente }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">RPM</label>
-                                                <input type="text" name="rpm" class="form-control" value="{{ x.rpm }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Modo de Fixação</label>
-                                                <input type="text" name="modo_fixacao" class="form-control" value="{{ x.modo_fixacao }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Quantidade</label>
-                                                <input type="number" name="quantidade" min="0" class="form-control" value="{{ x.quantidade }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Fabricante</label>
-                                                <select name="fabricante" class="form-select" required>
-                                                    {% for f in fabricantes %}
-                                                        <option value="{{ f.id_fabricante }}"
-                                                            {% if f.id_fabricante == x.id_fabricante.id_fabricante %}
-                                                            selected
-                                                            {% endif %}
-                                                        >
-                                                            {{ f.nome }}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Tipo</label>
-
-                                                <select name="tipo" class="form-select" required>
-                                                    {% for t in tipos %}
-                                                        <option value="{{ t.id_tipo }}"
-                                                            {% if t.id_tipo == x.id_tipo.id_tipo %}
-                                                                selected
-                                                            {% endif %}
-                                                        >
-                                                            {{ t.descricao }}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Local</label>
-
-                                                <select name="local" class="form-select" required>
-                                                    {% for l in locais %}
-                                                        <option value="{{ l.id_local }}"
-                                                            {% if l.id_local == x.id_local.id_local %}
-                                                                selected
-                                                            {% endif %}
-                                                        >
-                                                            {{ l.nome }}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="submit" class="btn btn-warning">Salvar</button>
-                                        </div>
-                                    </form>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-warning">Salvar</button>
                                 </div>
-                            </div>
+                            </form>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- ===== MODAIS EXCLUIR ===== -->
+                <!-- ===== MODAIS EXCLUIR ===== -->
 
-                        <div class="modal fade" id="excluir{{ x.id_motor }}" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form method="POST" action="{% url 'excluir_motor' x.id_motor %}">
-                                        {% csrf_token %}
-                                        <div class="modal-body">
-                                            <p>Excluir<strong> {{ x.modelo }}</strong>?</p>
-                                        </div>
-
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="submit" class="btn btn-danger">Excluir</button>
-                                        </div>
-                                    </form>
+                <div class="modal fade" id="excluir{{ x.id_motor }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="{% url 'excluir_motor' x.id_motor %}">
+                                {% csrf_token %}
+                                <div class="modal-body">
+                                    <p>Excluir<strong> {{ x.modelo }}</strong>?</p>
                                 </div>
-                            </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-danger">Excluir</button>
+                                </div>
+                            </form>
                         </div>
-                    {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">Nenhum motor encontrado.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     </div>
 
@@ -254,7 +256,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title text-primary">Adicionar Motor</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form method="POST" action="{% url 'adicionar_motor' %}">
