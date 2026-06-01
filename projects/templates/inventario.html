@@ -53,7 +53,11 @@
                 </button>
             {% endif %}
 
-            <table class="table table-hover">
+            <div class="mb-3">
+                <input type="text" class="form-control js-filter" data-target="motores" placeholder="Buscar motor...">
+            </div>
+
+            <table class="table table-hover js-table" data-name="motores">
                 <thead class="table-light">
                     <tr class="text-primary">
                         <th>Produto</th>
@@ -72,7 +76,7 @@
                                 <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal"
                                     data-bs-target="#ver{{ x.id_motor }}">Ver</button>
 
-                                {% if request.user.is_staff %}
+                                {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
                                     <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal"
                                         data-bs-target="#editar{{ x.id_motor }}">Editar</button>
 

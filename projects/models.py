@@ -92,9 +92,9 @@ class Motores(models.Model):
     rpm = models.CharField(max_length=40)
     modo_fixacao = models.CharField(max_length=100)
     quantidade = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    id_fabricante = models.ForeignKey(Fabricantes, models.DO_NOTHING, db_column='id_fabricante')
-    id_tipo = models.ForeignKey(TiposMotor, models.DO_NOTHING, db_column='id_tipo')
-    id_local = models.ForeignKey(Locais, models.DO_NOTHING, db_column='id_local')
+    id_fabricante = models.ForeignKey(Fabricantes, on_delete=models.CASCADE, db_column='id_fabricante')
+    id_tipo = models.ForeignKey(TiposMotor, on_delete=models.CASCADE, db_column='id_tipo')
+    id_local = models.ForeignKey(Locais, on_delete=models.CASCADE, db_column='id_local')
 
     def __str__(self) -> str:
         return self.modelo
@@ -108,8 +108,8 @@ class Inspecoes(models.Model):
     ]
 
     id_inspecao = models.AutoField(primary_key=True)
-    id_motor = models.ForeignKey(Motores, models.DO_NOTHING, db_column='id_motor')
-    id_usuario = models.ForeignKey(Usuarios, models.DO_NOTHING, db_column='id_usuario', null=True, blank=True) 
+    id_motor = models.ForeignKey(Motores, on_delete=models.CASCADE, db_column='id_motor')
+    id_usuario = models.ForeignKey(Usuarios, on_delete=models.CASCADE, db_column='id_usuario', null=True, blank=True)
     data_inspecao = models.DateField()
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='PENDENTE')
     observacoes = models.TextField()
