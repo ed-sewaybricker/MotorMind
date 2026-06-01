@@ -54,16 +54,20 @@ O objetivo do sistema é permitir o controle de inventário de motores, inspeç�
 
 ## 🔐 Controle de Acesso
 
-O sistema possui dois níveis principais:
+O sistema possui três níveis principais:
 
-- **Administrador (is_staff = True)**
-  - Gerencia usuários
-  - Gerencia motores
-  - Cria inspeções
+- **Administrador**
+  - Controle total do sistema
+
+- **Staff**
+  - Gerenciamento operacional
+  - Usuários comuns
+  - Inventário
+  - Inspeções
 
 - **Funcionário**
-  - Visualiza inventário
-  - Gerencia suas inspeções atribuídas
+  - Visualização do inventário
+  - Execução das inspeções atribuídas
 
 ---
 
@@ -145,20 +149,70 @@ Acesse no navegador: http://127.0.0.1:8000/
 ## 📁 Estrutura do projeto
 
 ```plaintext
-projects/
+MotorMind/
 │
-├── models.py
-├── views.py
-├── urls.py
-├── templates/
-│   ├── dashboard.html
-│   ├── inventario.html
-│   ├── inspecoes.html
-│   ├── login.html
-│   └── administrador.html
+├── project/
+│   ├── settings.py
+│   ├── urls.py
+│   ├── asgi.py
+│   └── wsgi.py
+│
+├── projects/
+│   ├── migrations/
+│   │
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── style.css
+│   │   └── js/
+│   │       └── filtros.js
+│   │
+│   ├── templates/
+│   │   ├── administrador.html
+│   │   ├── alterar_senha.html
+│   │   ├── dashboard.html
+│   │   ├── inspecoes.html
+│   │   ├── inventario.html
+│   │   ├── login.html
+│   │   └── master.html
+│   │
+│   ├── views/
+│   │   ├── __init__.py
+│   │   ├── auth_views.py
+│   │   ├── dashboard_views.py
+│   │   ├── administrador_views.py
+│   │   ├── usuario_views.py
+│   │   ├── fabricante_views.py
+│   │   ├── tipo_motor_views.py
+│   │   ├── local_views.py
+│   │   ├── motor_views.py
+│   │   └── inspecao_views.py
+│   │
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── permissions.py
+│   ├── tests.py
+│   └── urls.py
 │
 ├── manage.py
+├── requirements.txt
+└── README.md
 ```
+
+### Organização das Views
+
+Para facilitar a manutenção e escalabilidade do sistema, as views foram separadas por responsabilidade:
+
+* `auth_views.py` → autenticação e gerenciamento de sessão
+* `dashboard_views.py` → dashboard principal
+* `administrador_views.py` → painel administrativo
+* `usuario_views.py` → CRUD de usuários
+* `fabricante_views.py` → CRUD de fabricantes
+* `tipo_motor_views.py` → CRUD de tipos de motor
+* `local_views.py` → CRUD de locais
+* `motor_views.py` → inventário de motores
+* `inspecao_views.py` → gerenciamento de inspeções
+
 
 ## 👨‍💻 Autores
 Projeto desenvolvido por Eduardo Sewaybricker Zambreto Paixão, Jonathan Alisson Dos Santos, Matheus Dos Reis Pinto, Bruno Camargo Rosa, Felipe Yuji Yamada, Marcelo Diogo Gonsalez, Jhonatan David Arcanjo Da Silva e Matheus Augusto Alves
