@@ -44,10 +44,16 @@ def novo_usuario(request: HttpRequest):
         if is_admin(request.user):
             if add_as_admin:
                 usuario.nivel_acesso = "ADMIN"
+                usuario.is_staff = True
+                usuario.is_superuser = True
             else:
                 usuario.nivel_acesso = "USER"
+                usuario.is_staff = False
+                usuario.is_superuser = False
         else:
             usuario.nivel_acesso = "USER"
+            usuario.is_staff = False
+            usuario.is_superuser = False
 
         usuario.senha_temporaria = True
         usuario.save()
@@ -139,8 +145,10 @@ def promover(request: HttpRequest, id_usuario: int):
 
     if usuario.nivel_acesso == "USER":
         usuario.nivel_acesso = "STAFF"
+        usuario.is_staff = True
     elif usuario.nivel_acesso == "STAFF":
         usuario.nivel_acesso = "USER"
+        usuario.is_staff = False
 
     usuario.save()
 
