@@ -1,120 +1,141 @@
 {% extends "master.html" %}
 
-{% block title %}
-    Dashboard - MotorMind
-{% endblock %}
+{% block title %}Dashboard - MotorMind{% endblock %}
 
-{% block body_class %}
-    bg-white text-dark
-{% endblock %}
+{% block body_class %}bg-white text-dark{% endblock %}
 
 {% block content %}
 
-    <div class="d-flex vh-100">
+{# ── NAVBAR MOBILE ── #}
+<nav class="navbar navbar-light bg-light border-bottom border-primary px-3 d-md-none">
+    <span class="navbar-brand text-primary fw-bold">MotorMind</span>
+    <button class="navbar-toggler border-primary" type="button"
+            data-bs-toggle="offcanvas" data-bs-target="#menuMobile">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</nav>
 
-        <!-- SIDEBAR -->
-        <div class="bg-light p-3 border-end border-primary d-flex flex-column" style="width: 240px; height: 100vh;">
-            <div>
-                <h5 class="text-primary mb-4">MotorMind</h5>
-                <nav class="nav flex-column gap-1">
-                    <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Dashboard</a>
-                    <a href="{% url 'inventario' %}" class="nav-link {% if request.resolver_match.url_name == 'inventario' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inventário</a>
-                    <a href="{% url 'inspecoes' %}" class="nav-link {% if request.resolver_match.url_name == 'inspecoes' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Inspeções</a>
-                    {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
-                        <a href="{% url 'administrador' %}" class="nav-link {% if request.resolver_match.url_name == 'administrador' %}active fw-bold text-primary{% else %}text-dark{% endif %}">Painel Administrativo</a>
-                    {% endif %}
-                </nav>
-            </div>
-
-            <div class="mt-auto pt-3 border-top">
-                <div class="mb-2">
-                    <small class="text-muted">Logado como</small><br>
-                    <strong>{{ request.user.nome }}</strong>
-                    <div>
-                        <span class="badge bg-secondary">{{ request.user.nivel_acesso }}</span>
-                    </div>
-                </div>
-
-                <form action="{% url 'sair' %}" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger w-100">Sair</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- CONTEÚDO -->
-        <div class="p-4 w-100">
-
-            <h2 class="text-primary mb-4">Dashboard</h2>
-
-            <!-- 4 CARDS DE RESUMO -->
-            <div class="row g-3 mb-4">
-
-                <div class="col-md-3">
-                    <div class="card p-3">
-                        <small class="text-muted">Total de Motores</small>
-                        <h3 class="text-primary">{{ total_motores }}</h3>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="card p-3">
-                        <small class="text-muted">Em Manutenção</small>
-                        <h3 class="text-warning">{{ motores_em_manutencao }}</h3>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="card p-3">
-                        <small class="text-muted">Inspeções Pendentes</small>
-                        <h3 class="text-danger">{{ inspecoes_pendentes }}</h3>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- TABELA DE OCORRÊNCIAS -->
-            <h6 class="text-muted mb-2">Últimas Inspeções</h6>
-
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Motor</th>
-                        <th>Observação</th>
-                        <th>Status</th>
-                        <th>Data</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for i in ultimas_inspecoes %}
-                        <tr>
-
-                            <td>{{ i.id_motor.modelo }}</td>
-                            <td>{{ i.observacoes|truncatechars:40 }}</td>
-                            <td>
-                                {% if i.status == 'PENDENTE' %}
-                                    <span class="badge bg-danger">Pendente</span>
-
-                                {% elif i.status == 'EM ANDAMENTO' %}
-                                    <span class="badge bg-warning text-dark">Em andamento</span>
-
-                                {% elif i.status == 'CONCLUÍDO' %}
-                                    <span class="badge bg-success">Concluído</span>
-
-                                {% endif %}
-                            </td>
-
-                            <td>{{ i.data_inspecao|date:"d/m/Y" }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">Nenhuma inspeção encontrada.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
+{# ── OFFCANVAS MOBILE ── #}
+<div class="offcanvas offcanvas-start d-md-none" id="menuMobile" tabindex="-1">
+    <div class="offcanvas-header border-bottom border-primary">
+        <h5 class="offcanvas-title text-primary">MotorMind</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column p-3">
+        <nav class="nav flex-column gap-1 flex-grow-1">
+            <a href="{% url 'dashboard' %}" class="nav-link fw-bold text-primary">Dashboard</a>
+            <a href="{% url 'inventario' %}" class="nav-link text-dark">Inventário</a>
+            <a href="{% url 'inspecoes' %}" class="nav-link text-dark">Inspeções</a>
+            {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                <a href="{% url 'administrador' %}" class="nav-link text-dark">Painel Administrativo</a>
+            {% endif %}
+        </nav>
+        <div class="pt-3 border-top mt-auto">
+            <small class="text-muted">Logado como</small><br>
+            <strong>{{ request.user.nome }}</strong>
+            <div class="mb-2"><span class="badge bg-secondary">{{ request.user.nivel_acesso }}</span></div>
+            <form action="{% url 'sair' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger w-100">Sair</button>
+            </form>
         </div>
     </div>
+</div>
+
+{# ── LAYOUT PRINCIPAL ── #}
+<div class="d-flex">
+
+    {# ── SIDEBAR DESKTOP ── #}
+    <div class="d-none d-md-flex flex-column bg-light border-end border-primary p-3" style="width: 240px; min-height: 100vh;">
+        <div>
+            <h5 class="text-primary mb-4">MotorMind</h5>
+            <nav class="nav flex-column gap-1">
+                <a href="{% url 'dashboard' %}" class="nav-link fw-bold text-primary">Dashboard</a>
+                <a href="{% url 'inventario' %}" class="nav-link text-dark">Inventário</a>
+                <a href="{% url 'inspecoes' %}" class="nav-link text-dark">Inspeções</a>
+                {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                    <a href="{% url 'administrador' %}" class="nav-link text-dark">Painel Administrativo</a>
+                {% endif %}
+            </nav>
+        </div>
+        <div class="mt-auto pt-3 border-top">
+            <div class="mb-2">
+                <small class="text-muted">Logado como</small><br>
+                <strong>{{ request.user.nome }}</strong>
+                <div><span class="badge bg-secondary">{{ request.user.nivel_acesso }}</span></div>
+            </div>
+            <form action="{% url 'sair' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger w-100">Sair</button>
+            </form>
+        </div>
+    </div>
+
+    {# ── CONTEÚDO ── #}
+    <div class="flex-grow-1 p-3 p-md-4">
+        <h2 class="text-primary mb-4">Dashboard</h2>
+
+        {# Cards de resumo #}
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="card p-3 h-100">
+                    <small class="text-muted">Total de Motores</small>
+                    <h3 class="text-primary mb-0">{{ total_motores }}</h3>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card p-3 h-100">
+                    <small class="text-muted">Em Manutenção</small>
+                    <h3 class="text-warning mb-0">{{ motores_em_manutencao }}</h3>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card p-3 h-100">
+                    <small class="text-muted">Inspeções Pendentes</small>
+                    <h3 class="text-danger mb-0">{{ inspecoes_pendentes }}</h3>
+                </div>
+            </div>
+        </div>
+
+        {# Tabela de últimas inspeções #}
+        <h6 class="text-muted mb-2">Últimas Inspeções</h6>
+        <div class="table-scroll">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Motor</th>
+                            <th>Observação</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in ultimas_inspecoes %}
+                            <tr>
+                                <td>{{ i.id_motor.modelo }}</td>
+                                <td>{{ i.observacoes|truncatechars:40 }}</td>
+                                <td>
+                                    {% if i.status == 'PENDENTE' %}
+                                        <span class="badge bg-danger">Pendente</span>
+                                    {% elif i.status == 'EM ANDAMENTO' %}
+                                        <span class="badge bg-warning text-dark">Em andamento</span>
+                                    {% elif i.status == 'CONCLUÍDO' %}
+                                        <span class="badge bg-success">Concluído</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ i.data_inspecao|date:"d/m/Y" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Nenhuma inspeção encontrada.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

@@ -1,17 +1,12 @@
 {% extends "master.html" %}
 
-{% block title %}
-    Alterar Senha - MotorMind
-{% endblock %}
+{% block title %}Alterar Senha - MotorMind{% endblock %}
 
-{% block body_class %}
-    bg-white text-dark
-{% endblock %}
+{% block body_class %}bg-white text-dark{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-center align-items-center vh-100">
-    <div class="card bg-white border-primary text-dark p-4" style="width: 380px">
-
+<div class="d-flex justify-content-center align-items-center min-vh-100 p-3">
+    <div class="card border-primary p-4 w-100" style="max-width: 380px;">
         <h2 class="text-primary mb-1">MotorMind</h2>
         <p class="text-muted mb-4">É necessário alterar sua senha antes de continuar</p>
 
@@ -21,44 +16,15 @@
                 <label for="senha" class="form-label">Nova Senha</label>
                 <input type="password" id="senha" name="senha" class="form-control" required>
             </div>
-
             <div class="mb-3">
                 <label for="confirmar_senha" class="form-label">Confirmar Senha</label>
                 <input type="password" id="confirmar_senha" class="form-control" required>
                 <div class="form-text text-danger d-none" id="erroSenha">As senhas não coincidem</div>
             </div>
-
-            <button type="submit" class="btn btn-primary w-100" id="btnSalvar" disabled>Salvar nova senha</button>
+            <button type="submit" class="btn btn-primary w-100" id="btnSalvar" disabled>
+                Salvar nova senha
+            </button>
         </form>
-
     </div>
 </div>
-
-<script>
-    const senha = document.getElementById('senha');
-    const confirmar = document.getElementById('confirmar_senha');
-    const btn = document.getElementById('btnSalvar');
-    const erro = document.getElementById('erroSenha');
-
-    function validarSenha() {
-        const s1 = senha.value;
-        const s2 = confirmar.value;
-
-        if (s1.length > 0 && s1 === s2) {
-            btn.disabled = false;
-            erro.classList.add('d-none');
-        } else {
-            btn.disabled = true;
-
-            if (s2.length > 0) {
-                erro.classList.remove('d-none');
-            } else {
-                erro.classList.add('d-none');
-            }
-        }
-    }
-
-    senha.addEventListener('input', validarSenha);
-    confirmar.addEventListener('input', validarSenha);
-</script>
 {% endblock %}
