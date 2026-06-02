@@ -21,8 +21,8 @@ def inspecoes(request: HttpRequest):
         inspecoes = Inspecoes.objects.select_related('id_motor', 'id_usuario').filter(id_usuario=request.user)
 
     pendentes = inspecoes.filter(status='PENDENTE')
-    em_andamento = inspecoes.filter(status='EM ANDAMENTO')
-    concluidas = inspecoes.filter(status='CONCLUÍDO')
+    em_andamento = inspecoes.filter(status='EM ANDAMENTO').order_by('data_inicio')
+    concluidas = inspecoes.filter(status='CONCLUÍDO').order_by('data_conclusao')
 
     usuarios = Usuarios.objects.all().order_by('nome')
 
@@ -48,7 +48,7 @@ def nova_inspecao(request: HttpRequest):
     if request.method == 'POST':
         motor_id = request.POST.get('motor')
         responsavel_id = request.POST.get('responsavel')
-        data_inspecao = request.POST.get('data_inspecao')
+        data_inspecao = timezone.localdate()
         observacoes = request.POST.get('observacoes', '').strip()
 
         inspecao_aberta = Inspecoes.objects.filter(id_motor_id=motor_id,status__in=['PENDENTE', 'EM ANDAMENTO']).exists()
@@ -56,7 +56,7 @@ def nova_inspecao(request: HttpRequest):
         if inspecao_aberta:
             return redirect('inspecoes')
 
-        if not all([motor_id, responsavel_id, data_inspecao]):
+        if not all([motor_id, responsavel_id]):
             return redirect('inspecoes')
 
         Inspecoes.objects.create(
