@@ -184,49 +184,55 @@
 
                 <div class="col-md-4">
                     <h6 class="text-muted text-decoration-underline">PENDENTE</h6>
-                    {% for i in pendentes %}
-                        <div class="card border-danger border-2 shadow-sm p-3 mb-2">
-                            <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
-                            <p class="mb-1">{{ i.observacoes }}</p>
-                            <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
-                            <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
-                            <form action="{% url 'iniciar_inspecao' i.id_inspecao %}" method="POST">
-                                {% csrf_token %}
-                                <button class="btn btn-warning btn-sm mt-2">Iniciar Inspeção</button>
-                            </form>
-                        </div>
-                    {% endfor %}
+                    <div class="table-scroll">
+                        {% for i in pendentes %}
+                            <div class="card border-danger border-2 shadow-sm p-3 mb-2">
+                                <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
+                                <p class="mb-1">{{ i.observacoes }}</p>
+                                <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
+                                <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
+                                <form action="{% url 'iniciar_inspecao' i.id_inspecao %}" method="POST">
+                                    {% csrf_token %}
+                                    <button class="btn btn-warning btn-sm mt-2">Iniciar Inspeção</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
 
                 <div class="col-md-4">
                     <h6 class="text-muted text-decoration-underline">EM ANDAMENTO</h6>
-                    {% for i in em_andamento %}
-                        <div class="card border-warning border-2 shadow-sm p-3 mb-2">
-                            <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
-                            <p class="mb-1">{{ i.observacoes }}</p>
-                            <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
-                            <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
-                            <small class="text-muted">Iniciado em: {{ i.data_inicio|date:"d/m/Y H:i" }}</small>
-                            <form action="{% url 'concluir_inspecao' i.id_inspecao %}" method="POST">
-                                {% csrf_token %}
-                                <button class="btn btn-success btn-sm mt-2">Concluir Inspeção</button>
-                            </form>
-                        </div>
-                    {% endfor %}
+                    <div class="table-scroll">
+                        {% for i in em_andamento %}
+                            <div class="card border-warning border-2 shadow-sm p-3 mb-2">
+                                <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
+                                <p class="mb-1">{{ i.observacoes }}</p>
+                                <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
+                                <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
+                                <small class="text-muted">Iniciado em: {{ i.data_inicio|date:"d/m/Y H:i" }}</small>
+                                <form action="{% url 'concluir_inspecao' i.id_inspecao %}" method="POST">
+                                    {% csrf_token %}
+                                    <button class="btn btn-success btn-sm mt-2">Concluir Inspeção</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
 
                 <div class="col-md-4">
                     <h6 class="text-muted text-decoration-underline">CONCLUÍDO</h6>
-                    {% for i in concluidas %}
-                        <div class="card border-success border-2 shadow-sm p-3 mb-2">
-                            <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
-                            <p class="mb-1">{{ i.observacoes }}</p>
-                            <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
-                            <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
-                            <small class="text-muted">Início: {{ i.data_inicio|date:"d/m/Y H:i" }}</small>
-                            <small class="text-muted">Conclusão: {{ i.data_conclusao|date:"d/m/Y H:i" }}</small>
-                        </div>
-                    {% endfor %}
+                    <div class="table-scroll">
+                        {% for i in concluidas %}
+                            <div class="card border-success border-2 shadow-sm p-3 mb-2">
+                                <small class="fw-semibold text-secondary">{{ i.id_motor.modelo }}</small>
+                                <p class="mb-1">{{ i.observacoes }}</p>
+                                <small class="text-muted">{{ i.data_inspecao|date:"d/m/Y" }}</small>
+                                <small class="text-muted">Responsável: {{ i.id_usuario.nome }}</small>
+                                <small class="text-muted">Início: {{ i.data_inicio|date:"d/m/Y H:i" }}</small>
+                                <small class="text-muted">Conclusão: {{ i.data_conclusao|date:"d/m/Y H:i" }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
 
             </div>

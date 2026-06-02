@@ -9,8 +9,7 @@
 {# ── NAVBAR MOBILE ── #}
 <nav class="navbar navbar-light bg-light border-bottom border-primary px-3 d-md-none">
     <span class="navbar-brand text-primary fw-bold">MotorMind</span>
-    <button class="navbar-toggler border-primary" type="button"
-            data-bs-toggle="offcanvas" data-bs-target="#menuMobile">
+    <button class="navbar-toggler border-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuMobile">
         <span class="navbar-toggler-icon"></span>
     </button>
 </nav>
@@ -46,8 +45,7 @@
 <div class="d-flex">
 
     {# ── SIDEBAR DESKTOP ── #}
-    <div class="d-none d-md-flex flex-column bg-light border-end border-primary p-3"
-         style="width: 240px; min-height: 100vh;">
+    <div class="d-none d-md-flex flex-column bg-light border-end border-primary p-3" style="width: 240px; height: 100vh; position: sticky; top: 0;">
         <div>
             <h5 class="text-primary mb-4">MotorMind</h5>
             <nav class="nav flex-column gap-1">
@@ -84,46 +82,47 @@
         {% endif %}
 
         <div class="mb-3">
-            <input type="text" class="form-control js-filter" data-target="motores"
-                   placeholder="Buscar motor...">
+            <input type="text" class="form-control js-filter" data-target="motores" placeholder="Buscar motor...">
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover js-table" data-name="motores">
-                <thead class="table-light">
-                    <tr class="text-primary">
-                        <th>Produto</th>
-                        <th>Fabricante</th>
-                        <th class="d-none d-sm-table-cell">Local</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for x in meusMotores %}
-                        <tr>
-                            <td>{{ x.modelo }}</td>
-                            <td>{{ x.id_fabricante.nome }}</td>
-                            <td class="d-none d-sm-table-cell">{{ x.id_local.nome }}</td>
-                            <td>
-                                <div class="d-flex flex-wrap gap-1">
-                                    <button class="btn btn-sm btn-outline-primary"
-                                            data-bs-toggle="modal" data-bs-target="#ver{{ x.id_motor }}">Ver</button>
-                                    {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
-                                        <button class="btn btn-sm btn-outline-warning"
-                                                data-bs-toggle="modal" data-bs-target="#editar{{ x.id_motor }}">Editar</button>
-                                        <button class="btn btn-sm btn-outline-danger"
-                                                data-bs-toggle="modal" data-bs-target="#excluir{{ x.id_motor }}">Excluir</button>
-                                    {% endif %}
-                                </div>
-                            </td>
+        <div class="table-scroll">
+            <div class="table-responsive">
+                <table class="table table-hover js-table" data-name="motores">
+                    <thead class="table-light">
+                        <tr class="text-primary">
+                            <th>Produto</th>
+                            <th>Fabricante</th>
+                            <th class="d-none d-sm-table-cell">Local</th>
+                            <th>Ações</th>
                         </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">Nenhum motor encontrado.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for x in meusMotores %}
+                            <tr>
+                                <td>{{ x.modelo }}</td>
+                                <td>{{ x.id_fabricante.nome }}</td>
+                                <td class="d-none d-sm-table-cell">{{ x.id_local.nome }}</td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                data-bs-toggle="modal" data-bs-target="#ver{{ x.id_motor }}">Ver</button>
+                                        {% if request.user.nivel_acesso == "ADMIN" or request.user.nivel_acesso == "STAFF" %}
+                                            <button class="btn btn-sm btn-outline-warning"
+                                                    data-bs-toggle="modal" data-bs-target="#editar{{ x.id_motor }}">Editar</button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal" data-bs-target="#excluir{{ x.id_motor }}">Excluir</button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Nenhum motor encontrado.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         {# ── MODAIS POR MOTOR ── #}
@@ -155,13 +154,14 @@
             <div class="modal fade" id="editar{{ x.id_motor }}" tabindex="-1">
                 <div class="modal-dialog modal-dialog-scrollable">
                     <div class="modal-content">
-                        <form method="POST" action="{% url 'editar_motor' x.id_motor %}">
-                            {% csrf_token %}
-                            <div class="modal-header">
-                                <h5 class="modal-title text-warning">Editar {{ x.modelo }}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
+                        <div class="modal-header">
+                            <h5 class="modal-title text-warning">Editar {{ x.modelo }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        
+                        <div class="modal-body">
+                            <form method="POST" action="{% url 'editar_motor' x.id_motor %}">
+                                {% csrf_token %}
                                 <div class="mb-3">
                                     <label class="form-label">Modelo</label>
                                     <input type="text" name="modelo" class="form-control" value="{{ x.modelo }}" required>
@@ -223,12 +223,12 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-warning">Salvar</button>
-                            </div>
-                        </form>
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-warning">Salvar</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

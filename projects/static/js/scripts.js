@@ -55,4 +55,29 @@ document.addEventListener("DOMContentLoaded", function () {
             form.reset();
         });
     });
+
+    // Validação da tela de alteração de senha
+    const senha = document.getElementById('senha');
+    const confirmar = document.getElementById('confirmar_senha');
+    const btn = document.getElementById('btnSalvar');
+    const erro = document.getElementById('erroSenha');
+
+    if (senha && confirmar && btn && erro) {
+
+        function validarSenha() {
+            const s1 = senha.value;
+            const s2 = confirmar.value;
+
+            if (s1.length > 0 && s1 === s2) {
+                btn.disabled = false;
+                erro.classList.add('d-none');
+            } else {
+                btn.disabled = true;
+                erro.classList.toggle('d-none', s2.length === 0);
+            }
+        }
+
+        senha.addEventListener('input', validarSenha);
+        confirmar.addEventListener('input', validarSenha);
+}
 });
