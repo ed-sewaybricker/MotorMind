@@ -1,4 +1,4 @@
-# MotorMind 🚗⚙️
+# MotorMind
 
 Sistema de gerenciamento de motores desenvolvido com Django.
 
@@ -6,16 +6,16 @@ O objetivo do sistema é permitir o controle de inventário de motores, inspeç�
 
 ---
 
-## 📌 Funcionalidades
+## Funcionalidades
 
-### 👤 Autenticação
+### Autenticação
 - Login com matrícula e senha
 - Logout seguro
 - Sistema de senha temporária (obrigação de troca no primeiro acesso ou reset)
 
 ---
 
-### 🏭 Inventário de Motores
+### Inventário de Motores
 - Cadastro de motores com:
   - Modelo
   - Potência
@@ -30,7 +30,7 @@ O objetivo do sistema é permitir o controle de inventário de motores, inspeç�
 
 ---
 
-### 🔍 Inspeções
+### Inspeções
 - Criação de inspeções por administradores
 - Atribuição de responsáveis
 - Status:
@@ -44,7 +44,7 @@ O objetivo do sistema é permitir o controle de inventário de motores, inspeç�
 
 ---
 
-### 🧑‍💼 Administração
+### Administração
 - Cadastro de usuários
 - Edição e remoção de usuários
 - Promoção para administrador
@@ -52,7 +52,7 @@ O objetivo do sistema é permitir o controle de inventário de motores, inspeç�
 
 ---
 
-## 🔐 Controle de Acesso
+## Controle de Acesso
 
 O sistema possui três níveis principais:
 
@@ -71,7 +71,7 @@ O sistema possui três níveis principais:
 
 ---
 
-## ⚙️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 - Python 3
 - Django
@@ -82,7 +82,7 @@ O sistema possui três níveis principais:
 
 ---
 
-## 🚀 Como executar o projeto
+## Como executar o projeto
 
 ### 1. Clonar o repositório
 
@@ -137,7 +137,7 @@ python manage.py runserver
 
 Acesse no navegador: http://127.0.0.1:8000/
 
-## 🔐 Regras importantes do sistema
+## Regras importantes do sistema
 
 - Quantidade de motores não pode ser negativa (validação no backend)
 - Funcionários só podem interagir com suas próprias inspeções
@@ -146,7 +146,7 @@ Acesse no navegador: http://127.0.0.1:8000/
   - PENDENTE → EM ANDAMENTO → CONCLUÍDO
 - Senha temporária força troca obrigatória no primeiro acesso
 
-## 📁 Estrutura do projeto
+## Estrutura do projeto
 
 ```plaintext
 MotorMind/
